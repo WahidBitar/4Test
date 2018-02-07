@@ -33,7 +33,7 @@ namespace Validate.Service
         private static void retryPolicy(IRetryConfigurator cfg)
         {
             //cfg.Ignore<InternalApplicationException>();
-            cfg.Interval(7, TimeSpan.FromSeconds(3));
+            cfg.Interval(3, TimeSpan.FromSeconds(1));
         }
     }
 }
