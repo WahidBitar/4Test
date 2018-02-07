@@ -20,7 +20,7 @@ namespace OrderManagement.ViewModel
         private ObservableCollection<OrderViewModel> orders;
         private ObservableCollection<ServiceItem> services;
         private static IBusControl bus;
-
+  
         public CreateOrder()
         {
             ProcessCommand = new AsyncRelayCommand(processCommand);
@@ -61,7 +61,19 @@ namespace OrderManagement.ViewModel
 
         public ICommand ProcessCommand { get; }
 
-        public string TextToProcess { get; set; }
+        public string textToProcess { get; set; }
+        public string TextToProcess
+        {
+            get { return textToProcess; }
+            set
+            {
+                if (value != textToProcess)
+                {
+                    textToProcess = value;
+                    OnPropertyChanged("TextToProcess");
+                }
+            }
+        }
 
         public ObservableCollection<OrderViewModel> Orders
         {
