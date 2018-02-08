@@ -19,43 +19,48 @@ namespace OrderManagement
         {
             this.orders = orders;
         }
+
         public async Task Consume(ConsumeContext<IOrderValidatedEvent> context)
         {
             try
             {
-                OrderViewModel orderVM= new OrderViewModel();
-                Application.Current.Dispatcher.Invoke(() =>
+                await Application.Current.Dispatcher.Invoke(async () =>
                 {
-                    orderVM = orders.FirstOrDefault(o => o.Id == context.Message.OrderId);
-                    if (orderVM != null)
+                    var notification = context.Message.IsValid ? "Valid" : $"Invalid: {context.Message.Violations.FriendlyMessage()}";
+                    var updateDate = DateTime.UtcNow;
+                    using (var dbContext = new OrderManagementDbContext())
                     {
-                        orderVM.ProcessResults.Add(
+                        var order = dbContext.Orders.FirstOrDefault(o => o.Id == context.Message.OrderId);
+                        if (order != null)
+                        {
+                            order.ProcessResults.Add(new ProcessResult
+                            {
+                                Id = Guid.NewGuid(),
+                                IsValid = context.Message.IsValid,
+                                OrderId = order.Id,
+                                Result = notification,
+                                ServiceId = Service.Validation.Id,
+                            });
+                            order.Notifications = string.Join(",", order.Notifications.Split(',').Append(notification));
+                            order.LastUpdateDate = updateDate;
+                            await dbContext.SaveChangesAsync();
+                        }
+                    }
+
+                    var orderVm = orders.FirstOrDefault(o => o.Id == context.Message.OrderId);
+                    if (orderVm != null)
+                    {
+                        orderVm.ProcessResults.Add(
                             new ProcessResultViewModel()
                             {
                                 IsValid = context.Message.IsValid,
                                 ServiceName = Service.Validation.Name,
-                                Result = context.Message.IsValid ? "Valid" : $"Invalid: {context.Message.Violations.FriendlyMessage()}"
+                                Result = notification
                             });
-                        orderVM.Notifications.Insert(0, context.Message.IsValid ? "Valid" : $"Invalid: {context.Message.Violations.FriendlyMessage()}");
+                        orderVm.LastUpdateDate = updateDate;
+                        orderVm.Notifications.Insert(0, notification);
                     }
                 });
-                using (var dbContext = new OrderManagementDbContext())
-                {
-                    var order = dbContext.Orders.FirstOrDefault(o => o.Id == context.Message.OrderId);
-                    if (order != null)
-                    {
-                        order.ProcessResults.Add(new ProcessResult
-                        {
-                            Id = Guid.NewGuid(),
-                            IsValid = context.Message.IsValid,
-                            OrderId = order.Id,
-                            Result = context.Message.IsValid ? "Valid" : $"Invalid: {context.Message.Violations.FriendlyMessage()}",
-                            ServiceId = Service.Validation.Id,
-                        });
-                        order.Notifications = string.Join(",", orderVM.Notifications);
-                        await dbContext.SaveChangesAsync();
-                    }
-                }
             }
             catch (Exception e)
             {
@@ -68,40 +73,43 @@ namespace OrderManagement
         {
             try
             {
-                OrderViewModel orderVM = new OrderViewModel();
-                Application.Current.Dispatcher.Invoke(() =>
+                await Application.Current.Dispatcher.Invoke(async () =>
                 {
-                    orderVM = orders.FirstOrDefault(o => o.Id == context.Message.OrderId);
-                    if (orderVM != null)
+                    var notification = "Order Normalized";
+                    var updateDate = DateTime.UtcNow;
+                    using (var dbContext = new OrderManagementDbContext())
                     {
-                        orderVM.ProcessResults.Add(
-                            new ProcessResultViewModel()
+                        var order = dbContext.Orders.FirstOrDefault(o => o.Id == context.Message.OrderId);
+                        if (order != null)
+                        {
+                            order.ProcessResults.Add(new ProcessResult
+                            {
+                                Id = Guid.NewGuid(),
+                                IsValid = context.Message.IsValid,
+                                OrderId = order.Id,
+                                Result = context.Message.NormalizedText,
+                                ServiceId = Service.Normalize.Id,
+                            });
+                            order.Notifications = string.Join(",", order.Notifications.Split(',').Append(notification));
+                            order.LastUpdateDate = updateDate;
+                            await dbContext.SaveChangesAsync();
+                        }
+                    }
+
+                    var orderVm = orders.FirstOrDefault(o => o.Id == context.Message.OrderId);
+                    if (orderVm != null)
+                    {
+                        orderVm.ProcessResults.Add(
+                            new ProcessResultViewModel
                             {
                                 IsValid = context.Message.IsValid,
                                 Result = context.Message.NormalizedText,
                                 ServiceName = Service.Normalize.Name,
                             });
-                        orderVM.Notifications.Insert(0, "Order Normalized");
+                        orderVm.LastUpdateDate = updateDate;
+                        orderVm.Notifications.Insert(0, notification);
                     }
                 });
-                using (var dbContext = new OrderManagementDbContext())
-                {
-                    var order = dbContext.Orders.FirstOrDefault(o => o.Id == context.Message.OrderId);
-                    if (order != null)
-                    {
-                        order.ProcessResults.Add(new ProcessResult
-                        {
-                            Id = Guid.NewGuid(),
-                            IsValid = context.Message.IsValid,
-                            OrderId = order.Id,
-                            Result = context.Message.NormalizedText,
-                            ServiceId = Service.Normalize.Id,
-
-                        });
-                        order.Notifications = string.Join(",", orderVM.Notifications);
-                        await dbContext.SaveChangesAsync();
-                    }
-                }
             }
             catch (Exception e)
             {
@@ -112,42 +120,47 @@ namespace OrderManagement
 
         public async Task Consume(ConsumeContext<IOrderCapitalizedEvent> context)
         {
+
             try
             {
-                OrderViewModel orderVM = new OrderViewModel();
-                Application.Current.Dispatcher.Invoke(() =>
+                await Application.Current.Dispatcher.Invoke(async () =>
                 {
-                     orderVM = orders.FirstOrDefault(o => o.Id == context.Message.OrderId);
-                    if (orderVM != null)
+                    var notification = "Order Capitalized";
+                    var updateDate = DateTime.UtcNow;
+                    using (var dbContext = new OrderManagementDbContext())
                     {
-                        orderVM.ProcessResults.Add(
+                        var order = dbContext.Orders.FirstOrDefault(o => o.Id == context.Message.OrderId);
+                        if (order != null)
+                        {
+                            order.ProcessResults.Add(new ProcessResult
+                            {
+                                Id = Guid.NewGuid(),
+                                IsValid = context.Message.IsValid,
+                                OrderId = order.Id,
+                                Result = context.Message.CapitalizedText,
+                                ServiceId = Service.Capitalize.Id,
+
+                            });
+                            order.Notifications = string.Join(",", order.Notifications.Split(',').Append(notification));
+                            order.LastUpdateDate = updateDate;
+                            await dbContext.SaveChangesAsync();
+                        }
+                    }
+
+                    var orderVm = orders.FirstOrDefault(o => o.Id == context.Message.OrderId);
+                    if (orderVm != null)
+                    {
+                        orderVm.ProcessResults.Add(
                             new ProcessResultViewModel()
                             {
                                 IsValid = context.Message.IsValid,
                                 Result = context.Message.CapitalizedText,
                                 ServiceName = Service.Capitalize.Name,
                             });
-                        orderVM.Notifications.Insert(0, "Order Capitalized");
+                        orderVm.LastUpdateDate = updateDate;
+                        orderVm.Notifications.Insert(0, notification);
                     }
                 });
-                using (var dbContext = new OrderManagementDbContext())
-                {
-                    var order = dbContext.Orders.FirstOrDefault(o => o.Id == context.Message.OrderId);
-                    if (order != null)
-                    {
-                        order.ProcessResults.Add(new ProcessResult
-                        {
-                            Id = Guid.NewGuid(),
-                            IsValid = context.Message.IsValid,
-                            OrderId = order.Id,
-                            Result = context.Message.CapitalizedText,
-                            ServiceId = Service.Capitalize.Id,
-                        });
-                        order.Notifications = string.Join(",", orderVM.Notifications.ToArray());
-                        await dbContext.SaveChangesAsync();
-                    }
-                }
-
             }
             catch (Exception e)
             {

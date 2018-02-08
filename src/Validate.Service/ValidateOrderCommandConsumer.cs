@@ -1,11 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Helpers.Core;
 using MassTransit;
-using MassTransit.Events;
 using Message.Contracts;
 
 namespace Validate.Service
@@ -63,6 +59,8 @@ namespace Validate.Service
             catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
+                violationHandler.AddViolation(x => x, message: ex.Message);
+                await context.Publish<IValidatedMessage>(new ValidatedMessage(command.OrderId, violationHandler.Violations));
                 throw;
             }
         }

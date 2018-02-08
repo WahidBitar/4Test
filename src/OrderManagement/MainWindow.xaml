@@ -36,11 +36,11 @@
         </Grid>
         <DataGrid AutoGenerateColumns="False" ItemsSource="{Binding Orders}" Margin="5,10" Name="dgOrders" Grid.Row="1" ColumnWidth="*" CanUserAddRows="false">
             <DataGrid.Columns>
-              <DataGridTextColumn Binding="{Binding Id}" Header="Id"></DataGridTextColumn>
-                <DataGridTextColumn Binding="{Binding CreateDate}" Header="Create Date"></DataGridTextColumn>
-                <DataGridTextColumn Binding="{Binding LastUpdateDate}" Header="Last Update Date"></DataGridTextColumn>
-                <DataGridTextColumn Binding="{Binding Status}" Header="Status"></DataGridTextColumn>
-                <DataGridTextColumn Binding="{Binding OriginalText}" Header="Original Text"></DataGridTextColumn>
+              <DataGridTextColumn Width="240" Binding="{Binding Id}" Header="Id"></DataGridTextColumn>
+                <DataGridTextColumn Width="135" Binding="{Binding CreateDate}" Header="Create Date"></DataGridTextColumn>
+                <DataGridTextColumn Width="135" Binding="{Binding LastUpdateDate}" Header="Last Update Date"></DataGridTextColumn>
+                <DataGridTextColumn Width="70" Binding="{Binding Status}" Header="Status"></DataGridTextColumn>
+                <DataGridTextColumn MaxWidth="200" Binding="{Binding OriginalText}" Header="Original Text"></DataGridTextColumn>
                 
                 <DataGridTemplateColumn Header="Notifications">
                     <DataGridTemplateColumn.CellTemplate>

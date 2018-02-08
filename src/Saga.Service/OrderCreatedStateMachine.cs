@@ -1,5 +1,8 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
+using System.Threading.Tasks;
 using Automatonymous;
+using Automatonymous.Binders;
 using Message.Contracts;
 
 namespace Saga.Service
@@ -47,11 +50,9 @@ namespace Saga.Service
 
             DuringAny(
                 When(ValidatedMessageReceived, context => !context.Data.IsValid)
-                    .Then(context =>
-                    {
-                        context.Instance.RemainingServices = "";
-                    })
+                    .Then(context => { context.Instance.RemainingServices = ""; })
                     .TransitionTo(Failed)
+                    .Publish(context => new OrderValidatedEvent(context.Data.CorrelationId, context.Data.Violations))
                     .Finalize()
             );
 
@@ -125,20 +126,47 @@ namespace Saga.Service
             SetCompletedWhenFinalized();
         }
 
+        private Task onUnhandledEvent(UnhandledEventContext<OrderCreatedSagaState> context)
+        {
+            Console.WriteLine($"Unhandled Event: {context.Event.Name}");
+            return Task.CompletedTask;
+        }
+
+        private ExceptionActivityBinder<OrderCreatedSagaState, IValidatedMessage, Exception> handleExceptions(ExceptionActivityBinder<OrderCreatedSagaState, IValidatedMessage, Exception> builder)
+        {
+            return builder.Then(context =>
+                {
+                    context.Instance.RemainingServices = "";
+                    Console.WriteLine(context.Exception);
+                })
+                .TransitionTo(Failed)
+                .Finalize();
+        }
+
 
         public State Active { get; private set; }
+
         public State NoValidationRequired { get; private set; }
+
         public State Validated { get; private set; }
+
         public State Failed { get; private set; }
+
         public State Finished { get; private set; }
 
 
         public Event<IOrderCreatedEvent> OrderCreated { get; set; }
+
         public Event<IOrderReadyToProcessEvent> OrderReadyToProcessEvent { get; set; }
+
         public Event<IValidateOrderResponse> ValidateOrderResponse { get; set; }
+
         public Event<INormalizeOrderResponse> NormalizeOrderResponse { get; set; }
+
         public Event<ICapitalizeOrderResponse> CapitalizeOrderResponse { get; set; }
+
         public Event<IValidatedMessage> ValidatedMessageReceived { get; set; }
+
 
         /*public Event<IViolationOccurredEvent> ViolationOccurredEvent { get; set; }
         public Event<Fault<IValidateOrderCommand>> ValidateOrderCommandFailed { get; set; }*/

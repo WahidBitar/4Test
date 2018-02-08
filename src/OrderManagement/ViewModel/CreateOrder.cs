@@ -18,6 +18,7 @@ namespace OrderManagement.ViewModel
 {
     public class CreateOrder : INotifyPropertyChanged
     {
+        private string textToProcess;
         private ObservableCollection<OrderViewModel> orders;
         private ObservableCollection<ServiceItem> services;
         private static IBusControl bus;
@@ -53,7 +54,7 @@ namespace OrderManagement.ViewModel
                             {
                                 IsValid = result.IsValid,
                                 Result = result.Result,
-                                ServiceName = result.Service.Name
+                                ServiceName = result.Service.Name,
                             }))
                     });
                 orders = new ObservableCollection<OrderViewModel>(ordersList);
@@ -63,8 +64,7 @@ namespace OrderManagement.ViewModel
             {
                 cfg.ReceiveEndpoint(host, MessagingConstants.OrderManagementQueue, e =>
                 {
-                    e.Consumer( () => new UpdateOrderConsumer(Orders) );
-                    
+                    e.Consumer(() => new UpdateOrderConsumer(Orders));
                 });
             });
 
@@ -82,17 +82,15 @@ namespace OrderManagement.ViewModel
 
         public ICommand ProcessCommand { get; }
 
-        public string textToProcess { get; set; }
         public string TextToProcess
         {
             get { return textToProcess; }
             set
             {
-                if (value != textToProcess)
-                {
-                    textToProcess = value;
-                    OnPropertyChanged("TextToProcess");
-                }
+                if (value == textToProcess) 
+                    return;
+                textToProcess = value;
+                OnPropertyChanged("TextToProcess");
             }
         }
 
