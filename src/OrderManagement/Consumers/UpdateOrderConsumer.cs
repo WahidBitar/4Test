@@ -11,7 +11,7 @@ using OrderManagement.ViewModel;
 
 namespace OrderManagement
 {
-    public class UpdateOrderConsumer : IConsumer<IOrderValidatedEvent>, IConsumer<IOrderCapitalizedEvent>, IConsumer<IOrderNormalizedEvent>
+    public class UpdateOrderConsumer : IConsumer<IOrderValidatedEvent>, IConsumer<IOrderCapitalizedEvent>, IConsumer<IOrderNormalizedEvent>, IConsumer<IOrderStateChangedEvent>
     {
         private readonly ObservableCollection<OrderViewModel> orders;
 
@@ -41,7 +41,7 @@ namespace OrderManagement
                                 Result = notification,
                                 ServiceId = Service.Validation.Id,
                             });
-                            order.Notifications = string.Join(",", order.Notifications.Split(',').Append(notification));
+                            order.Notifications = updateNotification(order.Notifications, notification);
                             order.LastUpdateDate = updateDate;
                             await dbContext.SaveChangesAsync();
                         }
@@ -90,7 +90,7 @@ namespace OrderManagement
                                 Result = context.Message.NormalizedText,
                                 ServiceId = Service.Normalize.Id,
                             });
-                            order.Notifications = string.Join(",", order.Notifications.Split(',').Append(notification));
+                            order.Notifications = updateNotification(order.Notifications, notification);
                             order.LastUpdateDate = updateDate;
                             await dbContext.SaveChangesAsync();
                         }
@@ -141,7 +141,7 @@ namespace OrderManagement
                                 ServiceId = Service.Capitalize.Id,
 
                             });
-                            order.Notifications = string.Join(",", order.Notifications.Split(',').Append(notification));
+                            order.Notifications = updateNotification(order.Notifications, notification);
                             order.LastUpdateDate = updateDate;
                             await dbContext.SaveChangesAsync();
                         }
@@ -167,6 +167,49 @@ namespace OrderManagement
                 Console.WriteLine(e);
                 throw;
             }
+        }
+        public async Task Consume(ConsumeContext<IOrderStateChangedEvent> context)
+        {
+            try
+            {
+                await Application.Current.Dispatcher.Invoke(async () =>
+                {
+                    var updateDate = DateTime.UtcNow;
+                    var notification = $"OrderState: {context.Message.State}";
+                    using (var dbContext = new OrderManagementDbContext())
+                    {
+                        var order = dbContext.Orders.FirstOrDefault(o => o.Id == context.Message.OrderId);
+                        if (order != null)
+                        {
+                            order.LastUpdateDate = updateDate;
+                            order.Status = context.Message.State;
+                            order.Notifications = updateNotification(order.Notifications, notification);
+                            await dbContext.SaveChangesAsync();
+                        }
+                    }
+
+                    var orderVm = orders.FirstOrDefault(o => o.Id == context.Message.OrderId);
+                    if (orderVm != null)
+                    {
+                        orderVm.LastUpdateDate = DateTime.UtcNow;
+                        orderVm.Status = context.Message.State;
+                        orderVm.Notifications.Insert(0, notification);
+                    }
+
+                });
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
+        }
+
+        private static string updateNotification(string oldNotification, string notification)
+        {
+            return string.IsNullOrEmpty(oldNotification)
+                ? notification
+                : string.Join(",", oldNotification.Split(',').Append(notification));
         }
     }
 }

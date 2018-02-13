@@ -61,7 +61,7 @@ namespace Validate.Service
                 Console.WriteLine(ex.Message);
                 violationHandler.AddViolation(x => x, message: ex.Message);
                 await context.Publish<IValidatedMessage>(new ValidatedMessage(command.OrderId, violationHandler.Violations));
-                throw;
+                //throw;
             }
         }
     }

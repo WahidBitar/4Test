@@ -124,35 +124,27 @@ namespace Saga.Service
                     .Finalize()
             );
 
-            WhenLeaveAny(publishState2);
+            // To just publish event on any change in the state
+            //WhenLeaveAny(publishActivityOnChangeState);
+
+            // To do any kind of activity when state change
+            WhenEnterAny(actionActivityOnChangeState);
 
             SetCompletedWhenFinalized();
         }
 
-        private EventActivityBinder<OrderCreatedSagaState> publishState(EventActivityBinder<OrderCreatedSagaState> arg)
+        private EventActivityBinder<OrderCreatedSagaState> publishActivityOnChangeState(EventActivityBinder<OrderCreatedSagaState> arg)
         {
-            Console.WriteLine($"Register event: {arg.Event.Name}");
-            //var result = arg.Add(new PublishActivity<OrderCreatedSagaState, IOrderStateChangedEvent>(context => new OrderStateChangedEvent(context.Instance.OrderId, context.Instance.CurrentState)));
-            var result = arg.Add(new PublishActivity<OrderCreatedSagaState, IOrderStateChangedEvent>(context =>
-            {
-                var message = new OrderStateChangedEvent(context.Instance.OrderId, context.Instance.CurrentState);
-                Console.WriteLine($"OnStateChange - EventName: {context.Event.Name} - State: {context.Instance.CurrentState} - OrderId:{context.Instance.OrderId}");
-                context.Publish<IOrderStateChangedEvent>(message);
-                return message;
-            }));
+            var result = arg.Add(new PublishActivity<OrderCreatedSagaState, IOrderStateChangedEvent>(context => new OrderStateChangedEvent(context.Instance.OrderId, context.Instance.CurrentState)));
             return result;
         }
 
-        private EventActivityBinder<OrderCreatedSagaState> publishState2(EventActivityBinder<OrderCreatedSagaState> arg)
+        private EventActivityBinder<OrderCreatedSagaState> actionActivityOnChangeState(EventActivityBinder<OrderCreatedSagaState> arg)
         {
-            Console.WriteLine($"Register event: {arg.Event.Name}");
-            //var result = arg.Add(new PublishActivity<OrderCreatedSagaState, IOrderStateChangedEvent>(context => new OrderStateChangedEvent(context.Instance.OrderId, context.Instance.CurrentState)));
             var result = arg.Add(new ActionActivity<OrderCreatedSagaState>(context =>
             {
-                Console.WriteLine($"OnStateChange - EventName: {context.Event.Name} - State: {context.Instance.CurrentState} - OrderId:{context.Instance.OrderId}");
                 if (context.Instance.CurrentState != Final.Name && context.Instance.CurrentState != Initial.Name)
                     context.Publish(new OrderStateChangedEvent(context.Instance.OrderId, context.Instance.CurrentState));
-                //context.Raise(OrderStateChangedEvent);
             }));
             return result;
         }

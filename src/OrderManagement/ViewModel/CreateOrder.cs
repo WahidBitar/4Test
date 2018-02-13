@@ -18,6 +18,7 @@ namespace OrderManagement.ViewModel
 {
     public class CreateOrder : INotifyPropertyChanged
     {
+        private static Random random = new Random();
         private string textToProcess;
         private ObservableCollection<OrderViewModel> orders;
         private ObservableCollection<ServiceItem> services;
@@ -26,6 +27,7 @@ namespace OrderManagement.ViewModel
         public CreateOrder()
         {
             ProcessCommand = new AsyncRelayCommand(processCommand);
+            RandomProcessCommand = new AsyncRelayCommand(randomProcessCommand);
             orders = new ObservableCollection<OrderViewModel>();
 
             using (var dbContext = new OrderManagementDbContext())
@@ -65,7 +67,6 @@ namespace OrderManagement.ViewModel
                 cfg.ReceiveEndpoint(host, MessagingConstants.OrderManagementQueue, e =>
                 {
                     e.Consumer(() => new UpdateOrderConsumer(Orders));
-                    e.Consumer(() => new UpdateOrderStateConsumer(Orders));
                 });
             });
 
@@ -82,6 +83,7 @@ namespace OrderManagement.ViewModel
         }
 
         public ICommand ProcessCommand { get; }
+        public ICommand RandomProcessCommand { get; }
 
         public string TextToProcess
         {
@@ -100,6 +102,7 @@ namespace OrderManagement.ViewModel
             get => orders;
             set => orders = new ObservableCollection<OrderViewModel>(value);
         }
+
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -152,6 +155,55 @@ namespace OrderManagement.ViewModel
             }
         }
 
+        private async Task randomProcessCommand(object arg)
+        {
+            var randomOrders = new List<OrderViewModel>();
+            for (var i = 0; i < 100; i++)
+            {
+                randomOrders.Add(new OrderViewModel
+                {
+                    Id = Guid.NewGuid(),
+                    OrderServices = new ObservableCollection<Service>()
+                    {
+                        Service.Validation,
+                        Service.Normalize,
+                        Service.Capitalize
+                    },
+                    CreateDate = DateTime.UtcNow,
+                    LastUpdateDate = DateTime.UtcNow,
+                    OriginalText = randomString(10),
+                    Status = "Created"
+                });
+            }
+
+            var address = new Uri(MessagingConstants.MqUri + MessagingConstants.SagaQueue);
+            var sagaEndpoint = await bus.GetSendEndpoint(address);
+
+            Parallel.ForEach(randomOrders, async orderViewModel =>
+            {
+                using (var dbContext = new OrderManagementDbContext())
+                {
+                    var dataModelOrder = ordertoDataModelOrder(orderViewModel);
+                    dataModelOrder.Services = dbContext.Services.ToList();
+                    dbContext.Orders.Add(dataModelOrder);
+
+                    await dbContext.SaveChangesAsync();
+
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        Orders.Insert(0, orderViewModel);
+                    });
+                    await sagaEndpoint.Send<IOrderCreatedEvent>(new OrderCreated
+                    {
+                        OrderId = orderViewModel.Id,
+                        CreateDate = orderViewModel.CreateDate,
+                        OriginalText = orderViewModel.OriginalText,
+                        Services = orderViewModel.OrderServices.Select(s => s.Name).ToList()
+                    });
+                }
+            });
+        }
+
         [NotifyPropertyChangedInvocator]
         protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {
@@ -161,6 +213,13 @@ namespace OrderManagement.ViewModel
         private void onWindowClosing(object sender, CancelEventArgs e)
         {
             bus?.Stop();
+        }
+
+        private static string randomString(int length)
+        {
+            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 ";
+            return new string(Enumerable.Repeat(chars, length)
+                .Select(s => s[random.Next(s.Length)]).ToArray());
         }
     }
 }

@@ -22,10 +22,12 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="3*"></ColumnDefinition>
                 <ColumnDefinition Width="1*"></ColumnDefinition>
-                <ColumnDefinition Width="1*"></ColumnDefinition>
+                <ColumnDefinition Width="0.7*"></ColumnDefinition>
+                <ColumnDefinition Width="1.5*"></ColumnDefinition>
             </Grid.ColumnDefinitions>
             <TextBox  Margin="10,5" Text="{Binding Path=TextToProcess}" TextWrapping="Wrap"/>
             <Button  Command="{Binding ProcessCommand}" Margin="10,5" Grid.Column="2"   Style="{StaticResource MetroButton}">Process</Button>
+            <Button  Command="{Binding RandomProcessCommand}" Margin="10,5" Grid.Column="3"   Style="{StaticResource MetroButton}">Create Random Orders</Button>
             <ItemsControl  ItemsSource="{Binding Path=Services}" Margin="10,5"  Grid.Column="1" >
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
