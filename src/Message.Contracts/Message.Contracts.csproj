@@ -45,6 +45,7 @@
     <Compile Include="Commands\ICapitalizeOrderResponse.cs" />
     <Compile Include="Commands\INormalizeOrderResponse.cs" />
     <Compile Include="Commands\IShowNotificationCommand.cs" />
+    <Compile Include="Events\IOrderStateChangedEvent.cs" />
     <Compile Include="Events\IOrderValidatedEvent.cs" />
     <Compile Include="IValidatedMessage.cs" />
     <Compile Include="Commands\IValidateOrderCommand.cs" />

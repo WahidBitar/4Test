@@ -19,7 +19,7 @@ namespace Validate.Service
 
             var bus = BusConfigurator.ConfigureBus(MessagingConstants.MqUri, MessagingConstants.UserName, MessagingConstants.Password, (cfg, host) =>
             {
-                //cfg.UseRetry(retryPolicy);
+                cfg.UseRetry(retryPolicy);
 
                 cfg.ReceiveEndpoint(host, MessagingConstants.ValidateServiceQueue, e =>
                 {

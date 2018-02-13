@@ -65,6 +65,7 @@ namespace OrderManagement.ViewModel
                 cfg.ReceiveEndpoint(host, MessagingConstants.OrderManagementQueue, e =>
                 {
                     e.Consumer(() => new UpdateOrderConsumer(Orders));
+                    e.Consumer(() => new UpdateOrderStateConsumer(Orders));
                 });
             });
 

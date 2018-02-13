@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Automatonymous;
+using Automatonymous.Activities;
 using Automatonymous.Binders;
+using MassTransit;
 using Message.Contracts;
 
 namespace Saga.Service
@@ -12,22 +15,19 @@ namespace Saga.Service
         public OrderCreatedStateMachine()
         {
             InstanceState(x => x.CurrentState);
-
+            
             Event(() => OrderCreated, x => x.CorrelateBy(cart => cart.OrderId.ToString(), context => context.Message.OrderId.ToString())
-                .SelectId(context => context.Message.OrderId /*Guid.NewGuid()*/));
+                .SelectId(context => context.Message.OrderId));
 
             Event(() => ValidateOrderResponse, x => x.CorrelateById(context => context.Message.OrderId));
             Event(() => NormalizeOrderResponse, x => x.CorrelateById(context => context.Message.OrderId));
             Event(() => CapitalizeOrderResponse, x => x.CorrelateById(context => context.Message.OrderId));
             Event(() => OrderReadyToProcessEvent, x => x.CorrelateById(context => context.Message.OrderId));
-
             Event(() => ValidatedMessageReceived, x => x.CorrelateById(context => context.Message.CorrelationId));
-
-            /*Event(() => ViolationOccurredEvent, x => x.CorrelateById(context => context.Message.CorrelationId));
-            Event(() => ValidateOrderCommandFailed, x => x.CorrelateById(context => context.Message.Message.OrderId));*/
+            
 
 
-            Initially(
+            Initially(                
                 When(OrderCreated, shouldValidate)
                     .Then(updateState)
                     .TransitionTo(Active)
@@ -47,6 +47,7 @@ namespace Saga.Service
                         Services = context.Data.Services,
                     })
             );
+
 
             DuringAny(
                 When(ValidatedMessageReceived, context => !context.Data.IsValid)
@@ -123,24 +124,37 @@ namespace Saga.Service
                     .Finalize()
             );
 
+            WhenLeaveAny(publishState2);
+
             SetCompletedWhenFinalized();
         }
 
-        private Task onUnhandledEvent(UnhandledEventContext<OrderCreatedSagaState> context)
+        private EventActivityBinder<OrderCreatedSagaState> publishState(EventActivityBinder<OrderCreatedSagaState> arg)
         {
-            Console.WriteLine($"Unhandled Event: {context.Event.Name}");
-            return Task.CompletedTask;
+            Console.WriteLine($"Register event: {arg.Event.Name}");
+            //var result = arg.Add(new PublishActivity<OrderCreatedSagaState, IOrderStateChangedEvent>(context => new OrderStateChangedEvent(context.Instance.OrderId, context.Instance.CurrentState)));
+            var result = arg.Add(new PublishActivity<OrderCreatedSagaState, IOrderStateChangedEvent>(context =>
+            {
+                var message = new OrderStateChangedEvent(context.Instance.OrderId, context.Instance.CurrentState);
+                Console.WriteLine($"OnStateChange - EventName: {context.Event.Name} - State: {context.Instance.CurrentState} - OrderId:{context.Instance.OrderId}");
+                context.Publish<IOrderStateChangedEvent>(message);
+                return message;
+            }));
+            return result;
         }
 
-        private ExceptionActivityBinder<OrderCreatedSagaState, IValidatedMessage, Exception> handleExceptions(ExceptionActivityBinder<OrderCreatedSagaState, IValidatedMessage, Exception> builder)
+        private EventActivityBinder<OrderCreatedSagaState> publishState2(EventActivityBinder<OrderCreatedSagaState> arg)
         {
-            return builder.Then(context =>
-                {
-                    context.Instance.RemainingServices = "";
-                    Console.WriteLine(context.Exception);
-                })
-                .TransitionTo(Failed)
-                .Finalize();
+            Console.WriteLine($"Register event: {arg.Event.Name}");
+            //var result = arg.Add(new PublishActivity<OrderCreatedSagaState, IOrderStateChangedEvent>(context => new OrderStateChangedEvent(context.Instance.OrderId, context.Instance.CurrentState)));
+            var result = arg.Add(new ActionActivity<OrderCreatedSagaState>(context =>
+            {
+                Console.WriteLine($"OnStateChange - EventName: {context.Event.Name} - State: {context.Instance.CurrentState} - OrderId:{context.Instance.OrderId}");
+                if (context.Instance.CurrentState != Final.Name && context.Instance.CurrentState != Initial.Name)
+                    context.Publish(new OrderStateChangedEvent(context.Instance.OrderId, context.Instance.CurrentState));
+                //context.Raise(OrderStateChangedEvent);
+            }));
+            return result;
         }
 
 
@@ -166,10 +180,6 @@ namespace Saga.Service
         public Event<ICapitalizeOrderResponse> CapitalizeOrderResponse { get; set; }
 
         public Event<IValidatedMessage> ValidatedMessageReceived { get; set; }
-
-
-        /*public Event<IViolationOccurredEvent> ViolationOccurredEvent { get; set; }
-        public Event<Fault<IValidateOrderCommand>> ValidateOrderCommandFailed { get; set; }*/
 
         private bool shouldValidate(EventContext<OrderCreatedSagaState, IOrderCreatedEvent> context)
         {

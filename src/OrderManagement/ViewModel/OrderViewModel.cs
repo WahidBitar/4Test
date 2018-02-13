@@ -10,6 +10,7 @@ namespace OrderManagement.ViewModel
     public class OrderViewModel : INotifyPropertyChanged
     {
         private DateTime lastUpdateDate;
+        private string status;
 
         public OrderViewModel()
         {
@@ -34,7 +35,19 @@ namespace OrderManagement.ViewModel
         }
 
         public string OriginalText { get; set; }
-        public string Status { get; set; }
+
+        public string Status
+        {
+            get => status;
+            set
+            {
+                if (value == status)
+                    return;
+                status = value;
+                OnPropertyChanged("Status");
+            }
+        }
+
         public ObservableCollection<string> Notifications { get; set; }
         public ObservableCollection<Service> OrderServices { get; set; }
         public ObservableCollection<ProcessResultViewModel> ProcessResults { get; set; }

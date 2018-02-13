@@ -16,7 +16,7 @@ namespace Saga.Service
                 {
                     using (var connection = new SqlConnection(connectionString))
                     {
-                        Console.WriteLine($"Working on ConnectionString: {connectionString}");
+                        //Console.WriteLine($"Working on ConnectionString: {connectionString}");
                         // It worked, we can save this as our connection string
                         return connectionString;
                     }

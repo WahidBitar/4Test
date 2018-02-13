@@ -92,6 +92,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Consumers\UpdateOrderStateConsumer.cs" />
     <Compile Include="DbModel\ProcessResult.cs" />
     <Compile Include="DbModel\Service.cs" />
     <Compile Include="Helpers\AsyncRelayCommand.cs" />
