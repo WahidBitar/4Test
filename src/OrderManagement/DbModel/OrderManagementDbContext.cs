@@ -1,52 +1,38 @@
-﻿using System.Data.Entity;
-
+﻿using MongoDB.Bson.Serialization;
+using MongoDB.Driver;
 namespace OrderManagement.DbModel
 {
-    public class OrderManagementDbContext : DbContext
+    public class OrderManagementDbContext 
     {
-        public OrderManagementDbContext() : base("OrderManagement")
+
+        private readonly string ConnectionString = "mongodb://localhost";
+        private readonly string DatabaseName = "OrderManagement";
+
+        public OrderManagementDbContext() 
         {
 
+            var client = new MongoClient(ConnectionString);
+            Database = client.GetDatabase(DatabaseName);
+            InitializeMappers.Initialize();
         }
+        public IMongoDatabase Database { get; }
 
-        public IDbSet<Order> Orders { get; set; }
-        public IDbSet<Service> Services { get; set; }
-        public IDbSet<ProcessResult> ProcessResults { get; set; }
-
-        protected override void OnModelCreating(DbModelBuilder modelBuilder)
+        public IMongoCollection<Order> Orders => Database.GetCollection<Order>("Orders");
+        public IMongoCollection<Service> Services => Database.GetCollection<Service>("Services");
+        
+        
+        public static class InitializeMappers
         {
-            modelBuilder.Entity<Order>()
-                .HasMany(x => x.ProcessResults)
-                .WithRequired(x => x.Order)
-                .HasForeignKey(x => x.OrderId)
-                .WillCascadeOnDelete(true);
+            public static bool Initialized { get; private set; }
 
-            modelBuilder.Entity<Order>()
-                .Property(x => x.Status)
-                .HasMaxLength(100);
+            public static void Initialize()
+            {
+                if (Initialized)
+                    return;
 
-            modelBuilder.Entity<Order>()
-                .Property(x => x.OriginalText)
-                .HasMaxLength(150);
-
-            modelBuilder.Entity<Order>()
-                .HasMany(x => x.Services)
-                .WithMany()
-                .Map(m =>
-                {
-                    m.MapLeftKey("OrderId");
-                    m.MapRightKey("ServiceId");
-                    m.ToTable("OrdersServices");
-                });
-
-
-            modelBuilder.Entity<ProcessResult>()
-                .HasRequired(x => x.Service)
-                .WithMany()
-                .HasForeignKey(x => x.ServiceId)
-                .WillCascadeOnDelete(true);
-
-            base.OnModelCreating(modelBuilder);
+                BsonClassMap.RegisterClassMap<Order>();
+                Initialized = true;
+            }            
         }
     }
 }

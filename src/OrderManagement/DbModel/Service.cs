@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace OrderManagement.DbModel
 {
@@ -22,6 +23,7 @@ namespace OrderManagement.DbModel
             Name = "Capitalize"
         };
 
+        public static IList<Service> AllServices = new List<Service> {Validation, Normalize, Capitalize};
         public Guid Id { get; set; }
         public string Name { get; set; }
     }

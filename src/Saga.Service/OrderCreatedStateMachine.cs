@@ -6,6 +6,7 @@ using Automatonymous;
 using Automatonymous.Activities;
 using Automatonymous.Binders;
 using MassTransit;
+using MassTransit.MongoDbIntegration.Saga;
 using Message.Contracts;
 
 namespace Saga.Service
@@ -16,7 +17,7 @@ namespace Saga.Service
         {
             InstanceState(x => x.CurrentState);
             
-            Event(() => OrderCreated, x => x.CorrelateBy(cart => cart.OrderId.ToString(), context => context.Message.OrderId.ToString())
+            Event(() => OrderCreated, x => x.CorrelateBy(cart => cart.OrderId, context => context.Message.OrderId.ToString())
                 .SelectId(context => context.Message.OrderId));
 
             Event(() => ValidateOrderResponse, x => x.CorrelateById(context => context.Message.OrderId));
@@ -135,7 +136,7 @@ namespace Saga.Service
 
         private EventActivityBinder<OrderCreatedSagaState> publishActivityOnChangeState(EventActivityBinder<OrderCreatedSagaState> arg)
         {
-            var result = arg.Add(new PublishActivity<OrderCreatedSagaState, IOrderStateChangedEvent>(context => new OrderStateChangedEvent(context.Instance.OrderId, context.Instance.CurrentState)));
+            var result = arg.Add(new PublishActivity<OrderCreatedSagaState, IOrderStateChangedEvent>(context => new OrderStateChangedEvent(context.Instance.CorrelationId, context.Instance.CurrentState)));
             return result;
         }
 
@@ -144,7 +145,7 @@ namespace Saga.Service
             var result = arg.Add(new ActionActivity<OrderCreatedSagaState>(context =>
             {
                 if (context.Instance.CurrentState != Final.Name && context.Instance.CurrentState != Initial.Name)
-                    context.Publish(new OrderStateChangedEvent(context.Instance.OrderId, context.Instance.CurrentState));
+                    context.Publish(new OrderStateChangedEvent(context.Instance.CorrelationId, context.Instance.CurrentState));
             }));
             return result;
         }
@@ -180,7 +181,7 @@ namespace Saga.Service
 
         private void updateState(BehaviorContext<OrderCreatedSagaState, IOrderCreatedEvent> context)
         {
-            context.Instance.OrderId = context.Data.OrderId;
+            context.Instance.OrderId = context.Data.OrderId.ToString();
             context.Instance.Text = context.Data.OriginalText;
             context.Instance.CreateDate = context.Data.CreateDate;
             context.Instance.RemainingServices = string.Join("|", context.Data.Services);

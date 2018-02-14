@@ -5,10 +5,10 @@ using GreenPipes;
 using GreenPipes.Configurators;
 using Helpers.Core;
 using MassTransit;
-using MassTransit.EntityFrameworkIntegration;
-using MassTransit.EntityFrameworkIntegration.Saga;
+using MassTransit.MongoDbIntegration.Saga;
 using MassTransit.Saga;
 using Message.Contracts;
+using MongoDB.Driver;
 
 namespace Saga.Service
 {
@@ -16,23 +16,24 @@ namespace Saga.Service
     {
         private static OrderCreatedStateMachine machine;
 
-        //private static ISagaRepository<OrderCreatedSagaState> repository;
-        private static Lazy<ISagaRepository<OrderCreatedSagaState>> lazyRepository;
+        private static ISagaRepository<OrderCreatedSagaState> repository;
+        //private static Lazy<ISagaRepository<OrderCreatedSagaState>> lazyRepository;
 
         static void Main(string[] args)
         {
             machine = new OrderCreatedStateMachine();
-            //repository = new InMemorySagaRepository<OrderCreatedSagaState>();
-            SagaDbContextFactory sagaDbContextFactory = () => new SagaDbContext<OrderCreatedSagaState, OrderCreatedSagaSagaMap>(SagaDbContextFactoryProvider.ConnectionString);
-            lazyRepository = new Lazy<ISagaRepository<OrderCreatedSagaState>>(() => new EntityFrameworkSagaRepository<OrderCreatedSagaState>(sagaDbContextFactory));
-
+            repository = new InMemorySagaRepository<OrderCreatedSagaState>();
+            //SagaDbContextFactory sagaDbContextFactory = () => new SagaDbContext<OrderCreatedSagaState, OrderCreatedSagaSagaMap>(SagaDbContextFactoryProvider.ConnectionString);
+            //lazyRepository = new Lazy<ISagaRepository<OrderCreatedSagaState>>(() => new EntityFrameworkSagaRepository<OrderCreatedSagaState>(sagaDbContextFactory));
+            //var database = new MongoClient("mongodb://localhost").GetDatabase("OrderManagement");
+            //var mongoRepository = new MongoDbSagaRepository<OrderCreatedSagaState>(MongoUrl.Create("mongodb://localhost/OrderManagement"));
             var bus = BusConfigurator.ConfigureBus(MessagingConstants.MqUri, MessagingConstants.UserName, MessagingConstants.Password, (cfg, host) =>
             {
                 cfg.ReceiveEndpoint(host, MessagingConstants.SagaQueue, e =>
                 {
                     //e.UseRetry(retryPolicy);
-                    //e.StateMachineSaga(machine, repository);
-                    e.StateMachineSaga(machine, lazyRepository.Value);
+                    e.StateMachineSaga(machine, repository);
+                    //e.StateMachineSaga(machine, mongoRepository);
                 });
             });
             //bus.ConnectConsumeObserver(new ConsumeObserver());
@@ -47,7 +48,7 @@ namespace Saga.Service
         }*/
     }
 
-    public class OrderCreatedSagaSagaMap : SagaClassMapping<OrderCreatedSagaState>
+/*    public class OrderCreatedSagaSagaMap : SagaClassMapping<OrderCreatedSagaState>
     {
         public OrderCreatedSagaSagaMap()
         {
@@ -58,7 +59,7 @@ namespace Saga.Service
             Property(x => x.RemainingServices);
             //Property(x => x.RequestFinishedStatusBits);
         }
-    }
+    }*/
 }
 
 

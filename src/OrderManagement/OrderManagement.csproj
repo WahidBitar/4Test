@@ -34,11 +34,8 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="EntityFramework, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
-      <HintPath>..\packages\EntityFramework.6.2.0\lib\net45\EntityFramework.dll</HintPath>
-    </Reference>
-    <Reference Include="EntityFramework.SqlServer, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
-      <HintPath>..\packages\EntityFramework.6.2.0\lib\net45\EntityFramework.SqlServer.dll</HintPath>
+    <Reference Include="DnsClient, Version=1.0.7.0, Culture=neutral, PublicKeyToken=4574bb5573c51424, processorArchitecture=MSIL">
+      <HintPath>..\packages\DnsClient.1.0.7\lib\net45\DnsClient.dll</HintPath>
     </Reference>
     <Reference Include="GreenPipes, Version=1.2.1.98, Culture=neutral, PublicKeyToken=b800c4cfcdeea87b, processorArchitecture=MSIL">
       <HintPath>..\packages\GreenPipes.1.2.1\lib\net452\GreenPipes.dll</HintPath>
@@ -55,6 +52,15 @@
     <Reference Include="Microsoft.Expression.Interactions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Windows.Interactivity.WPF.2.0.20525\lib\net40\Microsoft.Expression.Interactions.dll</HintPath>
     </Reference>
+    <Reference Include="MongoDB.Bson, Version=2.5.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\MongoDB.Bson.2.5.0\lib\net45\MongoDB.Bson.dll</HintPath>
+    </Reference>
+    <Reference Include="MongoDB.Driver, Version=2.5.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\MongoDB.Driver.2.5.0\lib\net45\MongoDB.Driver.dll</HintPath>
+    </Reference>
+    <Reference Include="MongoDB.Driver.Core, Version=2.5.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\MongoDB.Driver.Core.2.5.0\lib\net45\MongoDB.Driver.Core.dll</HintPath>
+    </Reference>
     <Reference Include="NewId, Version=3.0.1.17, Culture=neutral, PublicKeyToken=b8e0e9f2f1e657fa, processorArchitecture=MSIL">
       <HintPath>..\packages\NewId.3.0.1\lib\net452\NewId.dll</HintPath>
     </Reference>
@@ -68,8 +74,15 @@
       <HintPath>..\packages\RabbitMQ.Client.5.0.1\lib\net451\RabbitMQ.Client.dll</HintPath>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Buffers, Version=4.0.2.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Buffers.4.4.0\lib\netstandard2.0\System.Buffers.dll</HintPath>
+    </Reference>
     <Reference Include="System.ComponentModel.DataAnnotations" />
     <Reference Include="System.Data" />
+    <Reference Include="System.Runtime.InteropServices.RuntimeInformation">
+      <HintPath>..\packages\System.Runtime.InteropServices.RuntimeInformation.4.3.0\lib\net45\System.Runtime.InteropServices.RuntimeInformation.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System.Transactions" />
     <Reference Include="System.Windows.Interactivity, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Windows.Interactivity.WPF.2.0.20525\lib\net40\System.Windows.Interactivity.dll</HintPath>
@@ -97,27 +110,7 @@
     <Compile Include="Helpers\AsyncRelayCommand.cs" />
     <Compile Include="Helpers\RelayCommand.cs" />
     <Compile Include="Helpers\RelayCommandGeneric.cs" />
-    <Compile Include="Migrations\201801190701539_UpdatedRelations.cs" />
-    <Compile Include="Migrations\201801190701539_UpdatedRelations.Designer.cs">
-      <DependentUpon>201801190701539_UpdatedRelations.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Migrations\201801190715055_UpdateOrderModel.cs" />
-    <Compile Include="Migrations\201801190715055_UpdateOrderModel.Designer.cs">
-      <DependentUpon>201801190715055_UpdateOrderModel.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Migrations\201801190723053_UpdateOrderModel1.cs" />
-    <Compile Include="Migrations\201801190723053_UpdateOrderModel1.Designer.cs">
-      <DependentUpon>201801190723053_UpdateOrderModel1.cs</DependentUpon>
-    </Compile>
     <Compile Include="Helpers\BusHelper.cs" />
-    <Compile Include="Migrations\201801221243316_AddedNotificationToOrder.cs" />
-    <Compile Include="Migrations\201801221243316_AddedNotificationToOrder.Designer.cs">
-      <DependentUpon>201801221243316_AddedNotificationToOrder.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Migrations\201802061328006_RemovedFinalResult.cs" />
-    <Compile Include="Migrations\201802061328006_RemovedFinalResult.Designer.cs">
-      <DependentUpon>201802061328006_RemovedFinalResult.cs</DependentUpon>
-    </Compile>
     <Compile Include="Properties\Annotations.cs" />
     <Compile Include="ViewModel\CreateOrder.cs" />
     <Compile Include="ViewModel\OrderViewModel.cs" />
@@ -140,11 +133,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DbModel\Order.cs" />
-    <Compile Include="Migrations\201801181643401_FirstTables.cs" />
-    <Compile Include="Migrations\201801181643401_FirstTables.Designer.cs">
-      <DependentUpon>201801181643401_FirstTables.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Migrations\Configuration.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -158,24 +146,6 @@
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
-    <EmbeddedResource Include="Migrations\201801181643401_FirstTables.resx">
-      <DependentUpon>201801181643401_FirstTables.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Migrations\201801190701539_UpdatedRelations.resx">
-      <DependentUpon>201801190701539_UpdatedRelations.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Migrations\201801190715055_UpdateOrderModel.resx">
-      <DependentUpon>201801190715055_UpdateOrderModel.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Migrations\201801190723053_UpdateOrderModel1.resx">
-      <DependentUpon>201801190723053_UpdateOrderModel1.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Migrations\201801221243316_AddedNotificationToOrder.resx">
-      <DependentUpon>201801221243316_AddedNotificationToOrder.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Migrations\201802061328006_RemovedFinalResult.resx">
-      <DependentUpon>201802061328006_RemovedFinalResult.cs</DependentUpon>
-    </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
