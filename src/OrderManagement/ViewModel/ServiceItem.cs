@@ -2,10 +2,40 @@
 
 namespace OrderManagement.ViewModel
 {
-    public class ServiceItem 
+    public class ServiceItem : ObservableObject
     {
-        public Guid Id { get; set; }
-        public string Name { get; set; }
-        public bool IsSelected { get; set; }
+        private Guid id;
+        private string name;
+        private bool isSelected;
+
+        public Guid Id
+        {
+            get => id;
+            set
+            {
+                id = value;
+                RaisePropertyChanged("Id");
+            }
+        }
+
+        public string Name
+        {
+            get => name;
+            set
+            {
+                name = value;
+                RaisePropertyChanged("Name");
+            }
+        }
+
+        public bool IsSelected
+        {
+            get => isSelected;
+            set
+            {
+                isSelected = value;
+                RaisePropertyChanged("IsSelected");
+            }
+        }
     }
 }

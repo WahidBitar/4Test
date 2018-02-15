@@ -72,7 +72,7 @@
                 <ColumnDefinition Width="1*"></ColumnDefinition>
                 <ColumnDefinition Width="1*"></ColumnDefinition>
             </Grid.ColumnDefinitions>
-            <Button Name="btnDeleteAllFinished"  Margin="10,5" Style="{StaticResource MetroButton}"  >Delete All Finished</Button>
+            <Button Name="btnDeleteAllFinished"  Margin="10,5" Style="{StaticResource MetroButton}" Command="{Binding DeleteFinishedCommand}" >Delete All Finished</Button>
             <Button Name="btnDeleteSelected" Grid.Column="1"  Margin="10,5" Style="{StaticResource MetroButton}" >Delete Selected</Button>
         </Grid>
     </Grid>

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
@@ -11,59 +10,28 @@ using Helpers.Core;
 using MassTransit;
 using Message.Contracts;
 using MongoDB.Driver;
-using OrderManagement.Annotations;
 using OrderManagement.DbModel;
 
 namespace OrderManagement.ViewModel
 {
-    public class CreateOrder : INotifyPropertyChanged
+    public class CreateOrder : ObservableObject
     {
         private static Random random = new Random();
         private string textToProcess;
-        private ObservableCollection<OrderViewModel> orders;
-        private ObservableCollection<ServiceItem> services;
         private static IBusControl bus;
         private OrderManagementDbContext dbContext;
+        private ObservableCollection<ServiceItem> services;
+        private ObservableCollection<OrderViewModel> orders;
 
         public CreateOrder()
         {
+
+            orders = new ObservableCollection<OrderViewModel>();
+            services = new ObservableCollection<ServiceItem>();
             ProcessCommand = new AsyncRelayCommand(processCommand);
             RandomProcessCommand = new AsyncRelayCommand(randomProcessCommand);
-            orders = new ObservableCollection<OrderViewModel>();
-
-            dbContext = new OrderManagementDbContext();
-
-            Services = new ObservableCollection<ServiceItem>(Service.AllServices.Select(s => new ServiceItem {Id = s.Id, IsSelected = true, Name = s.Name}).ToList());
-            var ordersList = dbContext
-                .Orders
-                .AsQueryable()
-                .ToList()
-                .Select(order => new OrderViewModel
-                {
-                    Notifications = new ObservableCollection<string>((order.Notifications ?? "").Split(',')),
-                    Id = order.Id,
-                    Status = order.Status,
-                    CreateDate = order.CreateDate,
-                    LastUpdateDate = order.LastUpdateDate,
-                    OriginalText = order.OriginalText,
-                    ProcessResults = new ObservableCollection<ProcessResultViewModel>(order.ProcessResults.Select(
-                        result => new ProcessResultViewModel
-                        {
-                            IsValid = result.IsValid,
-                            Result = result.Result,
-                            ServiceName = result.Service.Name,
-                        }))
-                });
-            orders = new ObservableCollection<OrderViewModel>(ordersList);
-
-
-            bus = BusConfigurator.ConfigureBus(MessagingConstants.MqUri, MessagingConstants.UserName, MessagingConstants.Password, (cfg, host) =>
-            {
-                cfg.ReceiveEndpoint(host, MessagingConstants.OrderManagementQueue, e => { e.Consumer(() => new UpdateOrderConsumer(Orders, dbContext)); });
-            });
-
-            bus.Start();
-
+            DeleteFinishedCommand = new AsyncRelayCommand(deleteFinishedCommand);
+            Application.Current.MainWindow.Loaded += windowsLoading;
             Application.Current.MainWindow.Closing += onWindowClosing;
         }
 
@@ -71,11 +39,28 @@ namespace OrderManagement.ViewModel
         public ObservableCollection<ServiceItem> Services
         {
             get => services;
-            set => services = new ObservableCollection<ServiceItem>(value);
+            set
+            {
+                services = value;
+                RaisePropertyChanged("Services");
+            }
         }
+
+        public ObservableCollection<OrderViewModel> Orders
+        {
+            get => orders;
+            set
+            {
+                orders = value;
+                RaisePropertyChanged("Orders");
+            }
+        }
+
 
         public ICommand ProcessCommand { get; }
         public ICommand RandomProcessCommand { get; }
+        public ICommand DeleteFinishedCommand { get; }
+
 
         public string TextToProcess
         {
@@ -85,22 +70,12 @@ namespace OrderManagement.ViewModel
                 if (value == textToProcess) 
                     return;
                 textToProcess = value;
-                OnPropertyChanged("TextToProcess");
+                RaisePropertyChanged("TextToProcess");
             }
         }
 
-        public ObservableCollection<OrderViewModel> Orders
-        {
-            get => orders;
-            set => orders = new ObservableCollection<OrderViewModel>(value);
-        }
 
-
-        public event PropertyChangedEventHandler PropertyChanged;
-
-
-
-        private Order ordertoDataModelOrder(OrderViewModel order)
+        private Order ordertoDataModelOrder(OrderViewModel order,IList<Service> services)
         {
             return new Order
             {
@@ -110,7 +85,7 @@ namespace OrderManagement.ViewModel
                 CreateDate = order.CreateDate,
                 LastUpdateDate = order.LastUpdateDate,
                 OriginalText = order.OriginalText,
-                Services = order.OrderServices
+                Services = services
             };
         }
 
@@ -121,13 +96,13 @@ namespace OrderManagement.ViewModel
             var order = new OrderViewModel
             {
                 Id = Guid.NewGuid(),
-                OrderServices = new ObservableCollection<Service>(Service.AllServices),
                 CreateDate = DateTime.UtcNow,
                 LastUpdateDate = DateTime.UtcNow,
                 OriginalText = TextToProcess,
                 Status = "Created"
             };
-            var dataModelOrder = ordertoDataModelOrder(order);
+            var selectedServices = Service.AllServices.Where(s => servicesIds.Contains(s.Id)).ToList();
+            var dataModelOrder = ordertoDataModelOrder(order, selectedServices);
             dbContext.Orders.InsertOne(dataModelOrder);
             TextToProcess = null;
 
@@ -139,60 +114,96 @@ namespace OrderManagement.ViewModel
                 OrderId = order.Id,
                 CreateDate = order.CreateDate,
                 OriginalText = order.OriginalText,
-                Services = order.OrderServices.Select(s => s.Name).ToList()
+                Services = selectedServices.Select(s => s.Name).ToList()
             });
         }
 
         private async Task randomProcessCommand(object arg)
         {
-            var randomOrders = new List<OrderViewModel>();
-            for (var i = 0; i < 100; i++)
-            {
-                randomOrders.Add(new OrderViewModel
-                {
-                    Id = Guid.NewGuid(),
-                    OrderServices = new ObservableCollection<Service>()
-                    {
-                        Service.Validation,
-                        Service.Normalize,
-                        Service.Capitalize
-                    },
-                    CreateDate = DateTime.UtcNow,
-                    LastUpdateDate = DateTime.UtcNow,
-                    OriginalText = randomString(10),
-                    Status = "Created"
-                });
-            }
-
             var address = new Uri(MessagingConstants.MqUri + MessagingConstants.SagaQueue);
             var sagaEndpoint = await bus.GetSendEndpoint(address);
 
-            Parallel.ForEach(randomOrders, async orderViewModel =>
+            await Task.Run(() =>
             {
-                var dataModelOrder = ordertoDataModelOrder(orderViewModel);
-                dataModelOrder.Services = Service.AllServices;
-                dbContext.Orders.InsertOne(dataModelOrder);
+                Parallel.For(0, 100, i =>
+                {
+                    Application.Current.Dispatcher.Invoke(async () =>
+                    {
+                        var orderViewModel = new OrderViewModel
+                        {
+                            Id = Guid.NewGuid(),
+                            CreateDate = DateTime.UtcNow,
+                            LastUpdateDate = DateTime.UtcNow,
+                            OriginalText = randomString(10),
+                            Status = "Created"
+                        };
 
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    Orders.Insert(0, orderViewModel);
-                });
-                await sagaEndpoint.Send<IOrderCreatedEvent>(new OrderCreated
-                {
-                    OrderId = orderViewModel.Id,
-                    CreateDate = orderViewModel.CreateDate,
-                    OriginalText = orderViewModel.OriginalText,
-                    Services = orderViewModel.OrderServices.Select(s => s.Name).ToList()
+                        var dataModelOrder = ordertoDataModelOrder(orderViewModel, Service.AllServices);
+                        dataModelOrder.Services = Service.AllServices;
+                        await dbContext.Orders.InsertOneAsync(dataModelOrder);
+
+                        await sagaEndpoint.Send<IOrderCreatedEvent>(new OrderCreated
+                        {
+                            OrderId = orderViewModel.Id,
+                            CreateDate = orderViewModel.CreateDate,
+                            OriginalText = orderViewModel.OriginalText,
+                            Services = Service.AllServices.Select(s => s.Name).ToList()
+                        });
+                        Orders.Insert(0, orderViewModel);
+                    });
                 });
             });
         }
 
-        [NotifyPropertyChangedInvocator]
-        protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        private async Task deleteFinishedCommand(object arg)
         {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+            await dbContext.Orders.DeleteManyAsync(x => x.Status == "Finished"|| x.Status == "Failed");
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                var deleted = Orders.Where(o => o.Status == "Finished" || o.Status == "Failed").ToList();
+                foreach (var order in deleted)
+                {
+                    Orders.Remove(order);
+                }
+            });
         }
 
+        private void windowsLoading(object sender, RoutedEventArgs eargs)
+        {
+            dbContext = new OrderManagementDbContext();
+
+            var ordersList = dbContext
+                .Orders
+                .AsQueryable()
+                .ToList()
+                .Select(order => new OrderViewModel
+                {
+                    Notifications = new ObservableSetCollection<string>((order.Notifications ?? "").Split(',')),
+                    Id = order.Id,
+                    Status = order.Status,
+                    CreateDate = order.CreateDate,
+                    LastUpdateDate = order.LastUpdateDate,
+                    OriginalText = order.OriginalText,
+                    ProcessResults = new ObservableSetCollection<ProcessResultViewModel>(order.ProcessResults.Select(
+                        result => new ProcessResultViewModel
+                        {
+                            IsValid = result.IsValid,
+                            Result = result.Result,
+                            ServiceName = result.Service.Name,
+                        }))
+                });
+
+            Orders.AddRange(ordersList);
+            Services.AddRange(Service.AllServices.Select(s => new ServiceItem {Id = s.Id, IsSelected = true, Name = s.Name}));
+
+
+            bus = BusConfigurator.ConfigureBus(MessagingConstants.MqUri, MessagingConstants.UserName, MessagingConstants.Password, (cfg, host) =>
+            {
+                cfg.ReceiveEndpoint(host, MessagingConstants.OrderManagementQueue, e => { e.Consumer(() => new UpdateOrderConsumer(Orders, dbContext)); });
+            });
+
+            bus.Start();
+        }
         private void onWindowClosing(object sender, CancelEventArgs e)
         {
             bus?.Stop();

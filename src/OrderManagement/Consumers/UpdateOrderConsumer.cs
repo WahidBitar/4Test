@@ -38,12 +38,13 @@ namespace OrderManagement
                         {
                             Id = Guid.NewGuid(),
                             IsValid = context.Message.IsValid,
-                            OrderId = order.Id,
                             Result = notification,
-                            ServiceId = Service.Validation.Id,
+                            Service = Service.Validation,
                         });
                         order.Notifications = updateNotification(order.Notifications, notification);
                         order.LastUpdateDate = updateDate;
+
+                        dbContext.Orders.ReplaceOne(x => x.Id == order.Id, order);
                     }
 
                     var orderVm = orders.FirstOrDefault(o => o.Id == context.Message.OrderId);
@@ -84,12 +85,13 @@ namespace OrderManagement
                         {
                             Id = Guid.NewGuid(),
                             IsValid = context.Message.IsValid,
-                            OrderId = order.Id,
                             Result = context.Message.NormalizedText,
-                            ServiceId = Service.Normalize.Id,
+                            Service = Service.Normalize,
                         });
                         order.Notifications = updateNotification(order.Notifications, notification);
                         order.LastUpdateDate = updateDate;
+
+                        dbContext.Orders.ReplaceOne(x => x.Id == order.Id, order);
                     }
 
                     var orderVm = orders.FirstOrDefault(o => o.Id == context.Message.OrderId);
@@ -130,13 +132,14 @@ namespace OrderManagement
                         {
                             Id = Guid.NewGuid(),
                             IsValid = context.Message.IsValid,
-                            OrderId = order.Id,
                             Result = context.Message.CapitalizedText,
-                            ServiceId = Service.Capitalize.Id,
+                            Service = Service.Capitalize,
 
                         });
                         order.Notifications = updateNotification(order.Notifications, notification);
                         order.LastUpdateDate = updateDate;
+
+                        dbContext.Orders.ReplaceOne(x => x.Id == order.Id, order);
                     }
 
                     var orderVm = orders.FirstOrDefault(o => o.Id == context.Message.OrderId);
@@ -177,6 +180,8 @@ namespace OrderManagement
                         order.LastUpdateDate = updateDate;
                         order.Status = context.Message.State;
                         order.Notifications = updateNotification(order.Notifications, notification);
+
+                        dbContext.Orders.ReplaceOne(x => x.Id == order.Id, order);
                     }
 
                     var orderVm = orders.FirstOrDefault(o => o.Id == context.Message.OrderId);
@@ -186,7 +191,6 @@ namespace OrderManagement
                         orderVm.Status = context.Message.State;
                         orderVm.Notifications.Insert(0, notification);
                     }
-
                 });
             }
             catch (Exception e)

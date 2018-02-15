@@ -1,26 +1,45 @@
 ﻿using System;
-using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
-using OrderManagement.Annotations;
-using OrderManagement.DbModel;
 
 namespace OrderManagement.ViewModel
 {
-    public class OrderViewModel : INotifyPropertyChanged
-    {
-        private DateTime lastUpdateDate;
+    public class OrderViewModel : ObservableObject
+    {        
+        private Guid id;
         private string status;
+        private DateTime lastUpdateDate;
+        private string originalText;
+        private DateTime createDate;
+        private ObservableSetCollection<string> notifications;
+        private ObservableSetCollection<ProcessResultViewModel> processResults;
 
         public OrderViewModel()
         {
-            OrderServices = new ObservableCollection<Service>();
-            ProcessResults = new ObservableCollection<ProcessResultViewModel>();
-            Notifications = new ObservableCollection<string>();
+            notifications = new ObservableSetCollection<string>();
+            processResults = new ObservableSetCollection<ProcessResultViewModel>();
         }
 
-        public Guid Id { get; set; }
-        public DateTime CreateDate { get; set; }
+
+        public Guid Id
+        {
+            get => id;
+            set
+            {
+                id = value;
+                RaisePropertyChanged("Id");
+            }
+        }
+
+        public DateTime CreateDate
+        {
+            get => createDate;
+            set
+            {
+                if (value.Equals(createDate))
+                    return;
+                createDate = value;
+                RaisePropertyChanged("CreateDate");
+            }
+        }
 
         public DateTime LastUpdateDate
         {
@@ -30,11 +49,21 @@ namespace OrderManagement.ViewModel
                 if (value == lastUpdateDate)
                     return;
                 lastUpdateDate = value;
-                OnPropertyChanged("LastUpdateDate");
+                RaisePropertyChanged("LastUpdateDate");
             }
         }
 
-        public string OriginalText { get; set; }
+        public string OriginalText
+        {
+            get => originalText;
+            set
+            {
+                if (value == originalText)
+                    return;
+                originalText = value;
+                RaisePropertyChanged("OriginalText");
+            }
+        }
 
         public string Status
         {
@@ -44,20 +73,28 @@ namespace OrderManagement.ViewModel
                 if (value == status)
                     return;
                 status = value;
-                OnPropertyChanged("Status");
+                RaisePropertyChanged("Status");
             }
         }
 
-        public ObservableCollection<string> Notifications { get; set; }
-        public ObservableCollection<Service> OrderServices { get; set; }
-        public ObservableCollection<ProcessResultViewModel> ProcessResults { get; set; }
-
-        public event PropertyChangedEventHandler PropertyChanged;
-
-        [NotifyPropertyChangedInvocator]
-        protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        public ObservableSetCollection<string> Notifications
         {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+            get { return notifications; }
+            set
+            {
+                notifications = value;
+                RaisePropertyChanged("Notifications");
+            }
+        }
+
+        public ObservableSetCollection<ProcessResultViewModel> ProcessResults
+        {
+            get => processResults;
+            set
+            {
+                processResults = value;
+                RaisePropertyChanged("ProcessResults");
+            }
         }
     }
 }
