@@ -16,7 +16,6 @@ namespace OrderManagement.ViewModel
 {
     public class CreateOrder : ObservableObject
     {
-        private static Random random = new Random();
         private string textToProcess;
         private static IBusControl bus;
         private OrderManagementDbContext dbContext;
@@ -67,7 +66,7 @@ namespace OrderManagement.ViewModel
             get { return textToProcess; }
             set
             {
-                if (value == textToProcess) 
+                if (value == textToProcess)
                     return;
                 textToProcess = value;
                 RaisePropertyChanged("TextToProcess");
@@ -75,17 +74,16 @@ namespace OrderManagement.ViewModel
         }
 
 
-        private Order ordertoDataModelOrder(OrderViewModel order,IList<Service> services)
+        private Order ordertoDataModelOrder(OrderViewModel order, IList<Service> subscribedServices)
         {
             return new Order
             {
-                Notifications = string.Join(",", order.Notifications),
                 Id = order.Id,
                 Status = order.Status,
                 CreateDate = order.CreateDate,
                 LastUpdateDate = order.LastUpdateDate,
                 OriginalText = order.OriginalText,
-                Services = services
+                Services = subscribedServices
             };
         }
 
@@ -120,8 +118,8 @@ namespace OrderManagement.ViewModel
 
         private async Task randomProcessCommand(object arg)
         {
-            var address = new Uri(MessagingConstants.MqUri + MessagingConstants.SagaQueue);
-            var sagaEndpoint = await bus.GetSendEndpoint(address);
+            //var address = new Uri(MessagingConstants.MqUri + MessagingConstants.SagaQueue);
+            //var sagaEndpoint = await bus.GetSendEndpoint(address);
 
             await Task.Run(() =>
             {
@@ -134,7 +132,7 @@ namespace OrderManagement.ViewModel
                             Id = Guid.NewGuid(),
                             CreateDate = DateTime.UtcNow,
                             LastUpdateDate = DateTime.UtcNow,
-                            OriginalText = randomString(10),
+                            OriginalText = StringHelpers.RandomString(10),
                             Status = "Created"
                         };
 
@@ -142,7 +140,8 @@ namespace OrderManagement.ViewModel
                         dataModelOrder.Services = Service.AllServices;
                         await dbContext.Orders.InsertOneAsync(dataModelOrder);
 
-                        await sagaEndpoint.Send<IOrderCreatedEvent>(new OrderCreated
+                        //await sagaEndpoint.Send<IOrderCreatedEvent>(new OrderCreated
+                        await bus.Publish<IOrderCreatedEvent>(new OrderCreated
                         {
                             OrderId = orderViewModel.Id,
                             CreateDate = orderViewModel.CreateDate,
@@ -157,7 +156,7 @@ namespace OrderManagement.ViewModel
 
         private async Task deleteFinishedCommand(object arg)
         {
-            await dbContext.Orders.DeleteManyAsync(x => x.Status == "Finished"|| x.Status == "Failed");
+            await dbContext.Orders.DeleteManyAsync(x => x.Status == "Finished" || x.Status == "Failed");
             Application.Current.Dispatcher.Invoke(() =>
             {
                 var deleted = Orders.Where(o => o.Status == "Finished" || o.Status == "Failed").ToList();
@@ -178,7 +177,7 @@ namespace OrderManagement.ViewModel
                 .ToList()
                 .Select(order => new OrderViewModel
                 {
-                    Notifications = new ObservableSetCollection<string>((order.Notifications ?? "").Split(',')),
+                    Notifications = new ObservableSetCollection<string>(order.Notifications),
                     Id = order.Id,
                     Status = order.Status,
                     CreateDate = order.CreateDate,
@@ -199,21 +198,21 @@ namespace OrderManagement.ViewModel
 
             bus = BusConfigurator.ConfigureBus(MessagingConstants.MqUri, MessagingConstants.UserName, MessagingConstants.Password, (cfg, host) =>
             {
-                cfg.ReceiveEndpoint(host, MessagingConstants.OrderManagementQueue, e => { e.Consumer(() => new UpdateOrderConsumer(Orders, dbContext)); });
+                cfg.ReceiveEndpoint(host, MessagingConstants.OrderManagementQueue, e =>
+                {
+                    e.Consumer(() => new OrderValidatedConsumer(Orders, dbContext));
+                    e.Consumer(() => new OrderStateChangedEventConsumer(Orders, dbContext));
+                    e.Consumer(() => new OrderNormalizedEventConsumer(Orders, dbContext));
+                    e.Consumer(() => new OrderCapitalizedEventConsumer(Orders, dbContext));
+                });
             });
 
             bus.Start();
         }
+
         private void onWindowClosing(object sender, CancelEventArgs e)
         {
             bus?.Stop();
-        }
-
-        private static string randomString(int length)
-        {
-            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 ";
-            return new string(Enumerable.Repeat(chars, length)
-                .Select(s => s[random.Next(s.Length)]).ToArray());
         }
     }
 }

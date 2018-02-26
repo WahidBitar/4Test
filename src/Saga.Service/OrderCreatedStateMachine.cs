@@ -144,7 +144,7 @@ namespace Saga.Service
         {
             var result = arg.Add(new ActionActivity<OrderCreatedSagaState>(context =>
             {
-                if (context.Instance.CurrentState != Final.Name && context.Instance.CurrentState != Initial.Name)
+                //if (context.Instance.CurrentState != Final.Name && context.Instance.CurrentState != Initial.Name)
                     context.Publish(new OrderStateChangedEvent(context.Instance.CorrelationId, context.Instance.CurrentState));
             }));
             return result;

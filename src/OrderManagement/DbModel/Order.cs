@@ -9,6 +9,7 @@ namespace OrderManagement.DbModel
         {
             Services = new HashSet<Service>();
             ProcessResults = new HashSet<ProcessResult>();
+            Notifications = new HashSet<string>();
         }
 
         public Guid Id { get; set; }
@@ -16,7 +17,7 @@ namespace OrderManagement.DbModel
         public DateTime LastUpdateDate { get; set; }
         public string OriginalText { get; set; }
         public string Status { get; set; }
-        public string Notifications { get; set; }
+        public ICollection<string> Notifications { get; set; }
         public ICollection<Service> Services { get; set; }
         public ICollection<ProcessResult> ProcessResults { get; set; }
     }

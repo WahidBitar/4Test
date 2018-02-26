@@ -105,6 +105,9 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Consumers\OrderStateChangedEventConsumer.cs" />
+    <Compile Include="Consumers\OrderNormalizedEventConsumer.cs" />
+    <Compile Include="Consumers\OrderCapitalizedEventConsumer.cs" />
     <Compile Include="DbModel\ProcessResult.cs" />
     <Compile Include="DbModel\Service.cs" />
     <Compile Include="Helpers\AsyncRelayCommand.cs" />
@@ -116,12 +119,13 @@
     <Compile Include="Helpers\PropertySupport.cs" />
     <Compile Include="Helpers\RelayCommand.cs" />
     <Compile Include="Helpers\RelayCommandGeneric.cs" />
+    <Compile Include="Helpers\StringHelpers.cs" />
     <Compile Include="Properties\Annotations.cs" />
     <Compile Include="ViewModel\CreateOrder.cs" />
     <Compile Include="ViewModel\OrderViewModel.cs" />
     <Compile Include="ViewModel\ProcessResultViewModel.cs" />
     <Compile Include="ViewModel\ServiceItem.cs" />
-    <Compile Include="Consumers\UpdateOrderConsumer.cs" />
+    <Compile Include="Consumers\OrderValidatedConsumer.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
