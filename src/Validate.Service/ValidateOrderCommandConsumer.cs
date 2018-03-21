@@ -25,13 +25,17 @@ namespace Validate.Service
             {
                 if (command == null)
                     throw new InternalApplicationException<IValidateOrderCommand>(x => x, ViolationType.Null);
+                
+                Console.WriteLine($"Processing the order: {command.OrderId}");
 
                 if (string.IsNullOrWhiteSpace(command.OriginalText))
                     throw new InternalApplicationException<IValidateOrderCommand>(x => x.OriginalText, ViolationType.Required);
 
-                if (random.Next(1, 9) % 2 == 0)
+                if (random.Next(1, 100) % 2 == 0)
                     throw new Exception("Bad luck!. Try again :P");
 
+                await Task.Delay(500);
+                
                 if (command.OriginalText == "asd")
                     violationHandler.AddViolation(x => x.OriginalText, ViolationType.NotAllowed);
 

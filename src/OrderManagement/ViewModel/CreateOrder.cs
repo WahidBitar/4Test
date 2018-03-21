@@ -102,9 +102,10 @@ namespace OrderManagement.ViewModel
             var selectedServices = Service.AllServices.Where(s => servicesIds.Contains(s.Id)).ToList();
             var dataModelOrder = ordertoDataModelOrder(order, selectedServices);
             dbContext.Orders.InsertOne(dataModelOrder);
-            TextToProcess = null;
+            //TextToProcess = null;
 
             Orders.Insert(0, order);
+
             var address = new Uri(MessagingConstants.MqUri + MessagingConstants.SagaQueue);
             var sagaEndpoint = await bus.GetSendEndpoint(address);
             await sagaEndpoint.Send<IOrderCreatedEvent>(new OrderCreated
@@ -118,40 +119,36 @@ namespace OrderManagement.ViewModel
 
         private async Task randomProcessCommand(object arg)
         {
-            //var address = new Uri(MessagingConstants.MqUri + MessagingConstants.SagaQueue);
-            //var sagaEndpoint = await bus.GetSendEndpoint(address);
+            var address = new Uri(MessagingConstants.MqUri + MessagingConstants.SagaQueue);
+            var sagaEndpoint = await bus.GetSendEndpoint(address);
 
-            await Task.Run(() =>
+            for (int i = 0; i < 100; i++)
             {
-                Parallel.For(0, 100, i =>
+                await Task.Run(async () =>
                 {
-                    Application.Current.Dispatcher.Invoke(async () =>
+                    var orderViewModel = new OrderViewModel
                     {
-                        var orderViewModel = new OrderViewModel
-                        {
-                            Id = Guid.NewGuid(),
-                            CreateDate = DateTime.UtcNow,
-                            LastUpdateDate = DateTime.UtcNow,
-                            OriginalText = StringHelpers.RandomString(10),
-                            Status = "Created"
-                        };
+                        Id = Guid.NewGuid(),
+                        CreateDate = DateTime.UtcNow,
+                        LastUpdateDate = DateTime.UtcNow,
+                        OriginalText = StringHelpers.RandomString(10),
+                        Status = "Created"
+                    };
+                    var dataModelOrder = ordertoDataModelOrder(orderViewModel, Service.AllServices);
+                    dataModelOrder.Services = Service.AllServices;
+                    await dbContext.Orders.InsertOneAsync(dataModelOrder);
+                    Application.Current.Dispatcher.Invoke(() => { Orders.Insert(0, orderViewModel); });
 
-                        var dataModelOrder = ordertoDataModelOrder(orderViewModel, Service.AllServices);
-                        dataModelOrder.Services = Service.AllServices;
-                        await dbContext.Orders.InsertOneAsync(dataModelOrder);
-
-                        //await sagaEndpoint.Send<IOrderCreatedEvent>(new OrderCreated
-                        await bus.Publish<IOrderCreatedEvent>(new OrderCreated
-                        {
-                            OrderId = orderViewModel.Id,
-                            CreateDate = orderViewModel.CreateDate,
-                            OriginalText = orderViewModel.OriginalText,
-                            Services = Service.AllServices.Select(s => s.Name).ToList()
-                        });
-                        Orders.Insert(0, orderViewModel);
+                    //await bus.Publish<IOrderCreatedEvent>(new OrderCreated
+                    await sagaEndpoint.Send<IOrderCreatedEvent>(new OrderCreated
+                    {
+                        OrderId = orderViewModel.Id,
+                        CreateDate = orderViewModel.CreateDate,
+                        OriginalText = orderViewModel.OriginalText,
+                        Services = Service.AllServices.Select(s => s.Name).ToList()
                     });
                 });
-            });
+            }
         }
 
         private async Task deleteFinishedCommand(object arg)

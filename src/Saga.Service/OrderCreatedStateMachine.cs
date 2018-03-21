@@ -1,12 +1,8 @@
 ﻿using System;
 using System.Linq;
-using System.Linq.Expressions;
-using System.Threading.Tasks;
 using Automatonymous;
 using Automatonymous.Activities;
 using Automatonymous.Binders;
-using MassTransit;
-using MassTransit.MongoDbIntegration.Saga;
 using Message.Contracts;
 
 namespace Saga.Service
@@ -36,9 +32,9 @@ namespace Saga.Service
                     {
                         OriginalText = args.Data.OriginalText,
                         OrderId = args.Data.OrderId,
-                    }),
+                    })
 
-                When(OrderCreated, context => !shouldValidate(context))
+                /*When(OrderCreated, context => !shouldValidate(context))
                     .Then(updateState)
                     .TransitionTo(NoValidationRequired)
                     .Publish(context => new OrderReadyToProcessEvent
@@ -46,13 +42,17 @@ namespace Saga.Service
                         OrderId = context.Data.OrderId,
                         OriginalText = context.Data.OriginalText,
                         Services = context.Data.Services,
-                    })
+                    })*/
             );
 
 
             DuringAny(
                 When(ValidatedMessageReceived, context => !context.Data.IsValid)
-                    .Then(context => { context.Instance.RemainingServices = ""; })
+                    .Then(context =>
+                    {
+                        Console.WriteLine($"Invalid order with Id {context.Data.CorrelationId}");
+                        context.Instance.RemainingServices = "";
+                    })
                     .TransitionTo(Failed)
                     .Publish(context => new OrderValidatedEvent(context.Data.CorrelationId, context.Data.Violations))
                     .Finalize()
@@ -61,15 +61,18 @@ namespace Saga.Service
 
             During(Active,
                 When(ValidateOrderResponse, context => context.Data.IsValid)
-                    .Then(context => { context.Instance.RemainingServices = string.Join("|", context.Instance.RemainingServices.Split('|').Where(s => s != "Validate")); })
+                    .Then(context =>
+                    {
+                        Console.WriteLine($"Valid order with Id {context.Data.CorrelationId}");
+                        context.Instance.RemainingServices = string.Join("|", context.Instance.RemainingServices.Split('|').Where(s => s != "Validate"));
+                    })
                     .TransitionTo(Validated)
                     .Publish(context => new OrderReadyToProcessEvent
                     {
                         OrderId = context.Data.OrderId,
                         OriginalText = context.Instance.Text,
                         Services = context.Instance.RemainingServices.Split('|'),
-                    }),
-                When(ValidateOrderResponse)
+                    })
                     .Publish(context => new OrderValidatedEvent(context.Data.OrderId, context.Data.Violations)
                     {
                         StartProcessTime = context.Data.StartProcessTime,
@@ -144,7 +147,7 @@ namespace Saga.Service
         {
             var result = arg.Add(new ActionActivity<OrderCreatedSagaState>(context =>
             {
-                //if (context.Instance.CurrentState != Final.Name && context.Instance.CurrentState != Initial.Name)
+                if (context.Instance.CurrentState!= "Active" && context.Instance.CurrentState != Final.Name && context.Instance.CurrentState != Initial.Name)
                     context.Publish(new OrderStateChangedEvent(context.Instance.CorrelationId, context.Instance.CurrentState));
             }));
             return result;
@@ -181,6 +184,7 @@ namespace Saga.Service
 
         private void updateState(BehaviorContext<OrderCreatedSagaState, IOrderCreatedEvent> context)
         {
+            Console.WriteLine($"Recieved an order with Id {context.Data.OrderId}");
             context.Instance.OrderId = context.Data.OrderId.ToString();
             context.Instance.Text = context.Data.OriginalText;
             context.Instance.CreateDate = context.Data.CreateDate;
