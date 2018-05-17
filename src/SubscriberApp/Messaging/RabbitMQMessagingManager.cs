@@ -37,19 +37,22 @@ namespace SubscriberApp.Messaging
             var eventingConsumer = new EventingBasicConsumer(amqpChannel);
             eventingConsumer.Received += (con, eventArgs) =>
             {
-                //// one way
+                using (serviceProvider.CreateScope())
+                {
+                    //// one way
 
-                /*var payloadString = Encoding.UTF8.GetString(eventArgs.Body);
-                var message = JsonConvert.DeserializeObject<ChatEvent>(payloadString);
-                var consumer = serviceProvider.GetService<IMessageConsumer<ChatEvent>>();
-                consumer.Consume(message);*/
+                    /*var payloadString = Encoding.UTF8.GetString(eventArgs.Body);
+                    var message = JsonConvert.DeserializeObject<ChatEvent>(payloadString);
+                    var consumer = serviceProvider.GetService<IMessageConsumer<ChatEvent>>();
+                    consumer.Consume(message);*/
 
-                //// another way
-                var consumer = serviceProvider.GetService<IMessageConsumer<ChatEvent>>();
-                consumer.Consume(eventArgs.Body);
+                    //// another way
+                    var consumer = serviceProvider.GetService<IMessageConsumer<ChatEvent>>();
+                    consumer.Consume(eventArgs.Body);
 
-                //Finally
-                amqpChannel.BasicAck(eventArgs.DeliveryTag, false);
+                    //Finally
+                    amqpChannel.BasicAck(eventArgs.DeliveryTag, false);
+                }
             };
             amqpChannel.BasicConsume(chatEventQueueName, false, eventingConsumer);
         }
@@ -65,15 +68,17 @@ namespace SubscriberApp.Messaging
             var eventingConsumer = new EventingBasicConsumer(amqpChannel);
             eventingConsumer.Received += (channel, eventArgs) =>
             {
-                if (int.TryParse(eventArgs.BasicProperties?.Headers?["RetryAttempts"]?.ToString(), out var retryAttempts))
+                using (serviceProvider.CreateScope())
                 {
-                    var consumer = serviceProvider.GetService<IMessageRetryConsumer<ChatEvent>>();
-                    consumer.Consume(eventArgs.Body, retryAttempts);
+                    if (int.TryParse(eventArgs.BasicProperties?.Headers?["RetryAttempts"]?.ToString(), out var retryAttempts))
+                    {
+                        var consumer = serviceProvider.GetService<IMessageRetryConsumer<ChatEvent>>();
+                        consumer.Consume(eventArgs.Body, retryAttempts);
+                    }
+
+                    //Finally
+                    amqpChannel.BasicAck(eventArgs.DeliveryTag, false);
                 }
-
-
-                //Finally
-                amqpChannel.BasicAck(eventArgs.DeliveryTag, false);
             };
 
             amqpChannel.BasicConsume(chatEventRetryQueueName, false, eventingConsumer);
