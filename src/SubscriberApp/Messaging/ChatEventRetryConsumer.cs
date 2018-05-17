@@ -6,22 +6,22 @@ using Newtonsoft.Json;
 
 namespace SubscriberApp.Messaging
 {
-    public class ChatEventConsumer : IMessageConsumer<ChatEvent>
+    public class ChatEventRetryConsumer : IMessageRetryConsumer<ChatEvent>
     {
         private readonly IMessagingManager messagingManager;
 
-        public ChatEventConsumer(IMessagingManager messagingManager)
+        public ChatEventRetryConsumer(IMessagingManager messagingManager)
         {
             this.messagingManager = messagingManager;
         }
 
-        public void Consume(byte[] messagePayload)
+        public void Consume(byte[] messagePayload, int previousAttempts)
         {
             try
             {
                 var payloadString = Encoding.UTF8.GetString(messagePayload);
                 var message = JsonConvert.DeserializeObject<ChatEvent>(payloadString);
-                Consume(message);
+                Consume(message, previousAttempts);
             }
             catch (Exception e)
             {
@@ -30,7 +30,7 @@ namespace SubscriberApp.Messaging
             }
         }
 
-        public void Consume(ChatEvent message)
+        public void Consume(ChatEvent message, int previousAttempts)
         {
             try
             {
@@ -38,14 +38,14 @@ namespace SubscriberApp.Messaging
                 {
                     throw new ArgumentNullException(nameof(message), "The message was null");
                 }
-                else if (message.MessageText == "fake")
+                else if (message.MessageText == "fake" && previousAttempts < 2)
                 {
                     messagingManager.PublishRetryChatEventMessage(message);
                 }
                 else
                 {
-                    Console.WriteLine($"new message from: {message.SenderName}");
-                    Console.WriteLine($"  - {message.MessageText}");
+                    Console.WriteLine($"got a message after {previousAttempts + 1} retries from: {message.SenderName}");
+                    Console.WriteLine($"  --- {message.MessageText}");
                     Console.WriteLine();
                 }
             }

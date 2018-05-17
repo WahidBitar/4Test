@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Text;
 using Messaging.Shared;
 using Microsoft.Extensions.DependencyInjection;
+using Newtonsoft.Json;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 
@@ -10,9 +12,12 @@ namespace SubscriberApp.Messaging
     {
         private readonly IModel amqpChannel;
         private readonly IServiceProvider serviceProvider;
+        public const string ContentType = "application/json";
         private const string chatEventQueueName = "ChatMessageEvent";
         private const string chatEventRetryQueueName = "ChatMessageEvent_Retry";
+        private const string chatEventErrorQueueName = "ChatMessageEvent_Error";
         private const int maximumAllowedRetry = 3;
+
         public RabbitMQMessagingManager(IModel channel, IServiceProvider serviceProvider)
         {
             this.amqpChannel = channel;
@@ -65,8 +70,32 @@ namespace SubscriberApp.Messaging
 
 
                 //Finally
-                ((IModel)channel).BasicAck(eventArgs.DeliveryTag, false);
+                ((IModel) channel).BasicAck(eventArgs.DeliveryTag, false);
             };
+        }
+
+        public void PublishErrorChatEventMessage(ChatEvent message)
+        {
+            var messageProperties = amqpChannel.CreateBasicProperties();
+            messageProperties.ContentType = ContentType;
+            amqpChannel.BasicPublish(exchange: "", routingKey: "", basicProperties: messageProperties, body: serialize(message));
+        }
+
+        public void PublishRetryChatEventMessage(ChatEvent message)
+        {
+            throw new NotImplementedException();
+        }
+
+
+        private static byte[] serialize(object obj)
+        {
+            if (obj == null)
+            {
+                return null;
+            }
+
+            var json = JsonConvert.SerializeObject(obj);
+            return Encoding.UTF8.GetBytes(json);
         }
     }
 }
