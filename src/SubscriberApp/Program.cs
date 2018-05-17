@@ -8,10 +8,9 @@ namespace SubscriberApp
     class Program
     {
         static void Main(string[] args)
-        {
-            Console.WriteLine("Hello World!");
-
+        {    
             IServiceCollection services = new ServiceCollection();
+            DependencyHelper.Register(services);
 
             var bootstrapper = new Bootstrapper(services);
             bootstrapper.Start(args);

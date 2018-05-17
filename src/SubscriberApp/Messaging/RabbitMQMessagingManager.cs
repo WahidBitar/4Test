@@ -92,9 +92,7 @@ namespace SubscriberApp.Messaging
         private static byte[] serialize(object obj)
         {
             if (obj == null)
-            {
                 return null;
-            }
 
             var json = JsonConvert.SerializeObject(obj);
             return Encoding.UTF8.GetBytes(json);
