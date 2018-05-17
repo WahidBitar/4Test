@@ -26,14 +26,15 @@ namespace SubscriberApp.Messaging
 
         public void ListenForChatMessageEvent()
         {
-            var queue = amqpChannel.QueueDeclare(queue: chatEventQueueName,
+            var queue = amqpChannel.QueueDeclare(
+                queue: chatEventQueueName,
                 durable: false,
                 exclusive: false,
                 autoDelete: false,
                 arguments: null);
 
             var eventingConsumer = new EventingBasicConsumer(amqpChannel);
-            eventingConsumer.Received += (channel, eventArgs) =>
+            eventingConsumer.Received += (con, eventArgs) =>
             {
                 //// one way
 
@@ -47,8 +48,9 @@ namespace SubscriberApp.Messaging
                 consumer.Consume(eventArgs.Body);
 
                 //Finally
-                ((IModel) channel).BasicAck(eventArgs.DeliveryTag, false);
+                amqpChannel.BasicAck(eventArgs.DeliveryTag, false);
             };
+            amqpChannel.BasicConsume(chatEventQueueName, false, eventingConsumer);
         }
 
         public void ListenForChatMessageRetryEvent()
@@ -62,7 +64,7 @@ namespace SubscriberApp.Messaging
             var eventingConsumer = new EventingBasicConsumer(amqpChannel);
             eventingConsumer.Received += (channel, eventArgs) =>
             {
-                if (int.TryParse(eventArgs.BasicProperties.Headers["RetryAttempts"]?.ToString(), out var retryAttempts))
+                if (int.TryParse(eventArgs.BasicProperties?.Headers["RetryAttempts"]?.ToString(), out var retryAttempts))
                 {
                     var consumer = serviceProvider.GetService<IMessageRetryConsumer<ChatEvent>>();
                     consumer.Consume(eventArgs.Body, retryAttempts);
@@ -70,8 +72,10 @@ namespace SubscriberApp.Messaging
 
 
                 //Finally
-                ((IModel) channel).BasicAck(eventArgs.DeliveryTag, false);
+                amqpChannel.BasicAck(eventArgs.DeliveryTag, false);
             };
+
+            amqpChannel.BasicConsume(chatEventQueueName, false, eventingConsumer);
         }
 
         public void PublishRetryChatEventMessage(ChatEvent message)

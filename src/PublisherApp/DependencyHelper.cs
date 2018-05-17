@@ -1,16 +1,15 @@
 ﻿using System;
-using Messaging.Shared;
 using Microsoft.Extensions.DependencyInjection;
+using PublisherApp.Messaging;
 using RabbitMQ.Client;
-using SubscriberApp.Messaging;
 
-namespace SubscriberApp
+namespace PublisherApp
 {
     internal class DependencyHelper
     {
         public static IServiceProvider Register(IServiceCollection services)
         {
-            services.AddSingleton(mb =>
+            services.AddSingleton<IModel>(mb =>
             {
                 var factory = new ConnectionFactory()
                 {
@@ -25,8 +24,6 @@ namespace SubscriberApp
             });
 
             services.AddSingleton<IMessagingManager, RabbitMQMessagingManager>();
-            services.AddScoped<IMessageConsumer<ChatEvent>, ChatEventConsumer>();
-            services.AddScoped<IMessageRetryConsumer<ChatEvent>, ChatEventRetryConsumer>();
 
             return services.BuildServiceProvider();
         }

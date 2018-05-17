@@ -8,14 +8,15 @@ namespace SubscriberApp
     {
         private readonly IServiceProvider serviceProvider;
 
-        public Bootstrapper(IServiceCollection services)
+        public Bootstrapper(IServiceProvider serviceProvider)
         {
-            this.serviceProvider = services.BuildServiceProvider();
+            this.serviceProvider = serviceProvider;
         }
 
         public void Start(string[] args)
         {
             var messagingManager = serviceProvider.GetService<IMessagingManager>();
+
             messagingManager.ListenForChatMessageEvent();
             messagingManager.ListenForChatMessageRetryEvent();
         }

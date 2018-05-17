@@ -9,10 +9,11 @@ namespace SubscriberApp
     {
         static void Main(string[] args)
         {    
+            Console.WriteLine("Subscriber Application");
             IServiceCollection services = new ServiceCollection();
-            DependencyHelper.Register(services);
+            var serviceProvider = DependencyHelper.Register(services);
 
-            var bootstrapper = new Bootstrapper(services);
+            var bootstrapper = new Bootstrapper(serviceProvider);
             bootstrapper.Start(args);
         }
     }
