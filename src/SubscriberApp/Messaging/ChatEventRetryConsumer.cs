@@ -40,7 +40,7 @@ namespace SubscriberApp.Messaging
                 }
                 else if (message.MessageText == "fake" && previousAttempts < 2)
                 {
-                    messagingManager.PublishRetryChatEventMessage(message);
+                    messagingManager.PublishRetryChatEventMessage(message, previousAttempts);
                 }
                 else
                 {

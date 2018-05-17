@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Text;
 using Messaging.Shared;
 using Microsoft.Extensions.DependencyInjection;
@@ -64,7 +65,7 @@ namespace SubscriberApp.Messaging
             var eventingConsumer = new EventingBasicConsumer(amqpChannel);
             eventingConsumer.Received += (channel, eventArgs) =>
             {
-                if (int.TryParse(eventArgs.BasicProperties?.Headers["RetryAttempts"]?.ToString(), out var retryAttempts))
+                if (int.TryParse(eventArgs.BasicProperties?.Headers?["RetryAttempts"]?.ToString(), out var retryAttempts))
                 {
                     var consumer = serviceProvider.GetService<IMessageRetryConsumer<ChatEvent>>();
                     consumer.Consume(eventArgs.Body, retryAttempts);
@@ -75,13 +76,17 @@ namespace SubscriberApp.Messaging
                 amqpChannel.BasicAck(eventArgs.DeliveryTag, false);
             };
 
-            amqpChannel.BasicConsume(chatEventQueueName, false, eventingConsumer);
+            amqpChannel.BasicConsume(chatEventRetryQueueName, false, eventingConsumer);
         }
 
-        public void PublishRetryChatEventMessage(ChatEvent message)
+        public void PublishRetryChatEventMessage(ChatEvent message, int retryAttempts = 0)
         {
             var messageProperties = amqpChannel.CreateBasicProperties();
             messageProperties.ContentType = ContentType;
+
+            messageProperties.Headers = new ConcurrentDictionary<string, object>();
+            messageProperties.Headers.Add("RetryAttempts", (1 + retryAttempts));
+
             amqpChannel.BasicPublish("", chatEventRetryQueueName, messageProperties, serialize(message));
         }
 
