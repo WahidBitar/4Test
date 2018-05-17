@@ -74,16 +74,18 @@ namespace SubscriberApp.Messaging
             };
         }
 
+        public void PublishRetryChatEventMessage(ChatEvent message)
+        {
+            var messageProperties = amqpChannel.CreateBasicProperties();
+            messageProperties.ContentType = ContentType;
+            amqpChannel.BasicPublish("", chatEventRetryQueueName, messageProperties, serialize(message));
+        }
+
         public void PublishErrorChatEventMessage(ChatEvent message)
         {
             var messageProperties = amqpChannel.CreateBasicProperties();
             messageProperties.ContentType = ContentType;
-            amqpChannel.BasicPublish(exchange: "", routingKey: "", basicProperties: messageProperties, body: serialize(message));
-        }
-
-        public void PublishRetryChatEventMessage(ChatEvent message)
-        {
-            throw new NotImplementedException();
+            amqpChannel.BasicPublish("", chatEventErrorQueueName, messageProperties, serialize(message));
         }
 
 

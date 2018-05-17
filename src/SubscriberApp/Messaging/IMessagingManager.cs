@@ -6,7 +6,7 @@ namespace SubscriberApp.Messaging
     {
         void ListenForChatMessageEvent();
         void ListenForChatMessageRetryEvent();
-        void PublishErrorChatEventMessage(ChatEvent message);
         void PublishRetryChatEventMessage(ChatEvent message);
+        void PublishErrorChatEventMessage(ChatEvent message);
     }
 }
