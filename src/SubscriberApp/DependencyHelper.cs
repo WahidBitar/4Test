@@ -28,7 +28,9 @@ namespace SubscriberApp
             services.AddScoped<IMessageConsumer<ChatEvent>, ChatEventConsumer>();
             services.AddScoped<IMessageRetryConsumer<ChatEvent>, ChatEventRetryConsumer>();
 
-            return services.BuildServiceProvider();
+            var serviceProvider = services.BuildServiceProvider();
+            services.AddSingleton(x => serviceProvider);
+            return serviceProvider;
         }
     }
 }

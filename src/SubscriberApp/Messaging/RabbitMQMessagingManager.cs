@@ -51,7 +51,7 @@ namespace SubscriberApp.Messaging
                     consumer.Consume(eventArgs.Body);
 
                     //Finally
-                    amqpChannel.BasicAck(eventArgs.DeliveryTag, false);
+                    amqpChannel.BasicAck(eventArgs.DeliveryTag, false);                    
                 }
             };
             amqpChannel.BasicConsume(chatEventQueueName, false, eventingConsumer);
