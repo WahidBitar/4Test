@@ -7,6 +7,7 @@ namespace Core
     public class SimpleRequest
     {
         private readonly StateMachine<States, Triggers>.TriggerWithParameters<Decision> approveTrigger;
+        private readonly StateMachine<States, Triggers>.TriggerWithParameters<Decision> askForModificationTrigger;
         private readonly StateMachine<States, Triggers>.TriggerWithParameters<Decision> rejectTrigger;
         private readonly StateMachine<States, Triggers> stateMachine;
 
@@ -21,22 +22,29 @@ namespace Core
 
             approveTrigger = stateMachine.SetTriggerParameters<Decision>(Triggers.Approve);
             rejectTrigger = stateMachine.SetTriggerParameters<Decision>(Triggers.Reject);
+            askForModificationTrigger = stateMachine.SetTriggerParameters<Decision>(Triggers.AskForModification);
 
             stateMachine.Configure(States.Created)
                 .PermitIf(Triggers.Post,
                     States.AwaitGroupManagerDecision,
-                    () => requester.WorkPlace == Person.WorkPlaces.Group)
+                    () => Requester.WorkPlace == Person.WorkPlaces.Group)
                 .PermitIf(Triggers.Post,
                     States.AwaitDivisionManagerDecision,
-                    () => requester.WorkPlace == Person.WorkPlaces.Division)
+                    () => Requester.WorkPlace == Person.WorkPlaces.Division)
                 .PermitIf(Triggers.Post,
                     States.AwaitDepartmentManagerDecision,
-                    () => requester.WorkPlace == Person.WorkPlaces.Department);
+                    () => Requester.WorkPlace == Person.WorkPlaces.Department);
+
+            stateMachine.Configure(States.NeedModification)
+                .SubstateOf(States.Created)
+                .OnEntryFrom(askForModificationTrigger, onAddDecision)
+                .OnEntryFrom(askForModificationTrigger, modificationNeeded);
 
             stateMachine.Configure(States.AwaitGroupManagerDecision)
                 .OnEntry(() => onPost(Person.UserLevels.GroupManager))
-                .OnEntryFrom(approveTrigger,onAddDecision)
-                .OnEntryFrom(rejectTrigger,onAddDecision)
+                .OnEntryFrom(approveTrigger, onAddDecision)
+                .OnEntryFrom(rejectTrigger, onAddDecision)
+                .PermitIf(askForModificationTrigger, States.NeedModification, decision => canDecide(decision, Person.UserLevels.GroupManager))
                 .PermitIf(approveTrigger, States.AwaitDivisionManagerDecision, decision => canDecide(decision, Person.UserLevels.GroupManager))
                 .PermitIf(rejectTrigger, States.Rejected, decision => canDecide(decision, Person.UserLevels.GroupManager));
 
@@ -44,6 +52,7 @@ namespace Core
                 .OnEntry(() => onPost(Person.UserLevels.DivisionManager))
                 .OnEntryFrom(approveTrigger, onAddDecision)
                 .OnEntryFrom(rejectTrigger, onAddDecision)
+                .PermitIf(askForModificationTrigger, States.NeedModification, decision => canDecide(decision, Person.UserLevels.DivisionManager))
                 .PermitIf(approveTrigger, States.AwaitDepartmentManagerDecision, decision => canDecide(decision, Person.UserLevels.DivisionManager))
                 .PermitIf(rejectTrigger, States.Rejected, decision => canDecide(decision, Person.UserLevels.DivisionManager));
 
@@ -51,6 +60,7 @@ namespace Core
                 .OnEntry(() => onPost(Person.UserLevels.DepartmentManager))
                 .OnEntryFrom(approveTrigger, onAddDecision)
                 .OnEntryFrom(rejectTrigger, onAddDecision)
+                .PermitIf(askForModificationTrigger, States.NeedModification, decision => canDecide(decision, Person.UserLevels.DepartmentManager))
                 .PermitIf(approveTrigger, States.Approved, decision => canDecide(decision, Person.UserLevels.DepartmentManager))
                 .PermitIf(rejectTrigger, States.Rejected, decision => canDecide(decision, Person.UserLevels.DepartmentManager));
 
@@ -66,7 +76,7 @@ namespace Core
         }
 
         public int CurrentState { get; private set; }
-        public Person Requester { get; }
+        public Person Requester { get; set; }
         public ICollection<Decision> Decisions { get; } = new HashSet<Decision>();
 
         public void Post()
@@ -80,7 +90,25 @@ namespace Core
                 stateMachine.Fire(approveTrigger, decision);
 
             if (decision.Result == Decision.DecisionResults.Rejected)
-                stateMachine.Fire(rejectTrigger, decision);            
+                stateMachine.Fire(rejectTrigger, decision);
+
+            if (decision.Result == Decision.DecisionResults.AskForModification)
+                stateMachine.Fire(askForModificationTrigger, decision);
+        }
+
+        private void modificationNeeded(Decision decision, StateMachine<States, Triggers>.Transition transition)
+        {
+            Console.WriteLine();
+            Console.ForegroundColor = ConsoleColor.DarkYellow;
+            Console.WriteLine("======== Modification Notification ========");
+            Console.WriteLine($"Hi {Requester.Name}, Your request need modification after {transition.Trigger}");
+            Console.WriteLine("===========================================");
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.WriteLine("======== Update Request ========");
+            var requester = Helpers.GetPerson();
+            Requester = requester;
+            Post();
+            Console.WriteLine();
         }
 
         private void onReject(StateMachine<States, Triggers>.Transition transition)
@@ -156,6 +184,7 @@ namespace Core
                 Console.WriteLine("The passed args");
                 foreach (var arg in args) Console.WriteLine(arg);
             }
+
             Console.ForegroundColor = ConsoleColor.White;
         }
 
@@ -186,19 +215,21 @@ namespace Core
 
         private enum Triggers
         {
-            Post,
-            Approve,
-            Reject
+            Post = 1,
+            Approve = 2,
+            Reject = 3,
+            AskForModification = 4
         }
 
         private enum States
         {
             Created = 1,
-            AwaitGroupManagerDecision = 2,
-            AwaitDivisionManagerDecision = 3,
-            AwaitDepartmentManagerDecision = 4,
-            Approved = 5,
-            Rejected = 6
+            NeedModification = 2,
+            AwaitGroupManagerDecision = 3,
+            AwaitDivisionManagerDecision = 4,
+            AwaitDepartmentManagerDecision = 5,
+            Approved = 6,
+            Rejected = 7
         }
     }
 }

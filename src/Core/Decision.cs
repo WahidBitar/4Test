@@ -4,10 +4,9 @@
     {
         public enum DecisionResults
         {
-            Undetermined = 0,
             Approved = 1,
             Rejected = 2,
-            //AskForModification = 3
+            AskForModification = 3
         }
 
         public Person Approver { get; set; }
