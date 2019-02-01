@@ -12,9 +12,9 @@
 
         public enum WorkPlaces
         {
-            Group,
-            Division,
-            Department
+            Group = 1,
+            Division = 2,
+            Department = 3
         }
 
         public string Name { get; set; }

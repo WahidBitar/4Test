@@ -1,6 +1,4 @@
-﻿using Stateless.Graph;
-
-namespace Core
+﻿namespace Core
 {
     public class Decision
     {
@@ -14,8 +12,6 @@ namespace Core
 
         public Person Approver { get; set; }
         public DecisionResults Result { get; set; }
-        public string Notes { get; set; }
-        public int Id { get; set; }
     }
 
 }
