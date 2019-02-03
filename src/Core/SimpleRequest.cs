@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Stateless;
 
 namespace Core
@@ -96,48 +95,29 @@ namespace Core
                 stateMachine.Fire(askForModificationTrigger, decision);
         }
 
+        #region Private Methods
+
         private void modificationNeeded(Decision decision, StateMachine<States, Triggers>.Transition transition)
         {
-            Console.WriteLine();
-            Console.ForegroundColor = ConsoleColor.DarkYellow;
-            Console.WriteLine("======== Modification Notification ========");
-            Console.WriteLine($"Hi {Requester.Name}, Your request need modification after {transition.Trigger}");
-            Console.WriteLine("===========================================");
-            Console.ForegroundColor = ConsoleColor.White;
-            Console.WriteLine("======== Update Request ========");
-            var requester = Helpers.GetPerson();
+            Helpers.ModificationNotification(transition.Trigger, Requester.Name);
+            var requester = Helpers.GetPerson("======== Update Request ========", true);
             Requester = requester;
             Post();
-            Console.WriteLine();
         }
 
         private void onReject(StateMachine<States, Triggers>.Transition transition)
         {
-            Console.ForegroundColor = ConsoleColor.Magenta;
-            Console.WriteLine("=================================");
-            Console.WriteLine($"The request of {Requester.Name} from {Requester.WorkPlace} has been Rejected");
-            Console.WriteLine("=================================");
-            Console.ForegroundColor = ConsoleColor.White;
-            Console.WriteLine();
+            Helpers.OnRejectNotification(Requester.Name, Requester.WorkPlace);
         }
 
         private void onApprove(StateMachine<States, Triggers>.Transition transition)
         {
-            Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine("=================================");
-            Console.WriteLine($"The request of {Requester.Name} from {Requester.WorkPlace} has been Approved");
-            Console.WriteLine("=================================");
-            Console.ForegroundColor = ConsoleColor.White;
-            Console.WriteLine();
+            Helpers.OnApproveNotification(Requester.Name, Requester.WorkPlace);
         }
 
         private void notifyRequester(StateMachine<States, Triggers>.Transition transition)
         {
-            Console.WriteLine();
-            Console.WriteLine("======== Notification to Requester ========");
-            Console.WriteLine($"Hi {Requester.Name}, Your request state has been changed from {transition.Source} to {transition.Destination} after {transition.Trigger}");
-            Console.WriteLine("===========================================");
-            Console.WriteLine();
+            Helpers.NotifyRequester(Requester.Name, transition.Source, transition.Destination, transition.Trigger);
         }
 
         private bool canDecide(Decision decision, Person.UserLevels expectedLevel)
@@ -153,64 +133,15 @@ namespace Core
         //private void onPost(StateMachine<States, Triggers>.Transition transition, Person.UserLevels approverLevel)
         private void onPost(Person.UserLevels approverLevel)
         {
-            Console.WriteLine();
-            Console.WriteLine("======== Notification to Approver ========");
-            var approver = getManager(approverLevel);
-            Console.WriteLine($"Hi, as you are {approver.Level} there is a new request awaiting your decision");
-            Console.WriteLine("==========================================");
-            Console.WriteLine();
-        }
-
-
-        private void onStateTransition(StateMachine<States, Triggers>.Transition transition)
-        {
-            Console.WriteLine("=======================================");
-            Console.WriteLine($"The state of request has been changed from '{transition.Source}' to '{transition.Destination}' after {transition.Trigger}");
-            /*Console.WriteLine("*  State to string:");
-            Console.WriteLine($"   {stateMachine}");*/
-            /*Console.WriteLine();
-            Console.WriteLine("*  State Uml Dot Graph:");
-            Console.WriteLine(UmlDotGraph.Format(stateMachine.GetInfo()));*/
-            Console.WriteLine("=======================================");
-            Console.WriteLine();
+            Helpers.NotifyApprover(approverLevel);
         }
 
         private void stateExceptionHandler(States state, Triggers trigger, ICollection<string> args)
         {
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine($"It's not allowed to {trigger} on the current state '{state}'");
-            if (args != null)
-            {
-                Console.WriteLine("The passed args");
-                foreach (var arg in args) Console.WriteLine(arg);
-            }
-
-            Console.ForegroundColor = ConsoleColor.White;
+            Helpers.HandleException(state, trigger, args);
         }
 
-        private Person getManager(Person.UserLevels userLevel)
-        {
-            var result = new Person {Level = userLevel};
-            switch (userLevel)
-            {
-                case Person.UserLevels.GroupManager:
-                    result.WorkPlace = Person.WorkPlaces.Group;
-                    result.Name = "G.M Sam";
-                    break;
-                case Person.UserLevels.DivisionManager:
-                    result.WorkPlace = Person.WorkPlaces.Division;
-                    result.Name = "Dv.M Ham";
-                    break;
-                case Person.UserLevels.DepartmentManager:
-                    result.WorkPlace = Person.WorkPlaces.Department;
-                    result.Name = "Dp.M Yat";
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(userLevel), userLevel, null);
-            }
-
-            return result;
-        }
+        #endregion
 
 
         private enum Triggers

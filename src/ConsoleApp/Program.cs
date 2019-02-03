@@ -1,21 +1,21 @@
 ﻿using System;
 using Core;
+using Core.ApprovalAbstraction;
 
 namespace ConsoleApp
 {
     class Program
     {
-        private static SimpleRequest request;
+        private static AnotherRequest request;
 
         static void Main(string[] args)
         {
-            var requester = Helpers.GetPerson();
-            Console.WriteLine();
+            var requester = Helpers.GetPerson("======= New Request =======",true);
 
-            request = new SimpleRequest(1, requester);
+            request = new AnotherRequest(RequestState.Created, requester);
             request.Post();
-            Console.WriteLine();
-            while (request.CurrentState < 6)
+
+            while (request.CurrentState.Result == RequestState.ResultType.InProgress)
             {
                 decision();
             }
@@ -31,8 +31,7 @@ namespace ConsoleApp
 
         private static void decision()
         {
-            Console.WriteLine("=====***==== Decision ====***====");
-            var approver = Helpers.GetPerson();
+            var approver = Helpers.GetPerson("=====***==== Decision ====***====",false);
             Console.WriteLine("Please add your decision");
             Console.WriteLine("Approved = 1, Rejected = 2, AskForModification = 3");
             var decisionResult = (Decision.DecisionResults) int.Parse(Console.ReadLine());

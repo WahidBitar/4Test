@@ -1,11 +1,10 @@
-﻿using System;
-using Stateless;
+﻿using Stateless;
 
 namespace Core.ApprovalAbstraction
 {
     public class AnotherRequest : BaseRequest
     {
-        public AnotherRequest(RequestState currentState, Person requester) : base(currentState,requester)
+        public AnotherRequest(RequestState currentState, Person requester) : base(currentState, requester)
         {
             stateMachine.Configure(RequestState.Created)
                 .PermitIf(Triggers.Post,
@@ -49,12 +48,7 @@ namespace Core.ApprovalAbstraction
 
         private void onPost(Person.UserLevels approverLevel)
         {
-            Console.WriteLine();
-            Console.WriteLine("======== Notification to Approver ========");
-            var approver = Helpers.GetManager(approverLevel);
-            Console.WriteLine($"Hi, as you are {approver.Level} there is a new request awaiting your decision");
-            Console.WriteLine("==========================================");
-            Console.WriteLine();
+            Helpers.NotifyApprover(approverLevel);
         }
 
         private bool canDecide(Decision decision, Person.UserLevels expectedLevel)
@@ -69,26 +63,15 @@ namespace Core.ApprovalAbstraction
 
         private void notifyRequester(StateMachine<RequestState, Triggers>.Transition transition)
         {
-            Console.WriteLine();
-            Console.WriteLine("======== Notification to Requester ========");
-            Console.WriteLine($"Hi {Requester.Name}, Your request state has been changed from {transition.Source} to {transition.Destination} after {transition.Trigger}");
-            Console.WriteLine("===========================================");
-            Console.WriteLine();
+            Helpers.NotifyRequester(Requester.Name, transition.Source, transition.Destination, transition.Trigger);
         }
 
         private void modificationNeeded(Decision decision, StateMachine<RequestState, Triggers>.Transition transition)
         {
-            Console.WriteLine();
-            Console.ForegroundColor = ConsoleColor.DarkYellow;
-            Console.WriteLine("======== Modification Notification ========");
-            Console.WriteLine($"Hi {Requester.Name}, Your request need modification after {transition.Trigger}");
-            Console.WriteLine("===========================================");
-            Console.ForegroundColor = ConsoleColor.White;
-            Console.WriteLine("======== Update Request ========");
-            var requester = Helpers.GetPerson();
+            Helpers.ModificationNotification(transition.Trigger, Requester.Name);
+            var requester = Helpers.GetPerson("======== Update Request ========", true);
             Requester = requester;
             Post();
-            Console.WriteLine();
         }
 
         #endregion
@@ -97,7 +80,7 @@ namespace Core.ApprovalAbstraction
         {
             public static RequestState AwaitGroupManagerDecision => new RequestState {Result = RequestState.ResultType.InProgress, SubState = "AwaitGroupManagerDecision"};
             public static RequestState AwaitDepartmentManagerDecision => new RequestState {Result = RequestState.ResultType.InProgress, SubState = "AwaitDepartmentManagerDecision"};
-            public static RequestState NeedModification => new RequestState {Result = RequestState.ResultType.InProgress, SubState = "NeedModification"};            
+            public static RequestState NeedModification => new RequestState {Result = RequestState.ResultType.InProgress, SubState = "NeedModification"};
         }
     }
 }

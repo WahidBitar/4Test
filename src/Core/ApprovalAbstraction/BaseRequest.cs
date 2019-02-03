@@ -57,35 +57,17 @@ namespace Core.ApprovalAbstraction
 
         protected virtual void OnReject(StateMachine<RequestState, Triggers>.Transition transition)
         {
-            Console.ForegroundColor = ConsoleColor.Magenta;
-            Console.WriteLine("=================================");
-            Console.WriteLine($"The request of {Requester.Name} from {Requester.WorkPlace} has been Rejected");
-            Console.WriteLine("=================================");
-            Console.ForegroundColor = ConsoleColor.White;
-            Console.WriteLine();
+            Helpers.OnRejectNotification(Requester.Name, Requester.WorkPlace);
         }
 
         protected virtual void OnApprove(StateMachine<RequestState, Triggers>.Transition transition)
         {
-            Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine("=================================");
-            Console.WriteLine($"The request of {Requester.Name} from {Requester.WorkPlace} has been Approved");
-            Console.WriteLine("=================================");
-            Console.ForegroundColor = ConsoleColor.White;
-            Console.WriteLine();
-        }        
+            Helpers.OnApproveNotification(Requester.Name, Requester.WorkPlace);
+        }
 
         protected void stateExceptionHandler(RequestState state, Triggers trigger, ICollection<string> args)
         {
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine($"It's not allowed to {trigger} on the current state '{state}'");
-            if (args != null)
-            {
-                Console.WriteLine("The passed args");
-                foreach (var arg in args) Console.WriteLine(arg);
-            }
-
-            Console.ForegroundColor = ConsoleColor.White;
+            Helpers.HandleException(state, trigger, args);
         }
 
 
