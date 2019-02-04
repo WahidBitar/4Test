@@ -1,5 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Stateless;
+using Stateless.Graph;
 
 namespace Core
 {
@@ -72,6 +74,8 @@ namespace Core
                 .OnEntry(onReject);
 
             stateMachine.OnTransitioned(notifyRequester);
+            Console.WriteLine();
+            Console.WriteLine(UmlDotGraph.Format(stateMachine.GetInfo()));
         }
 
         public int CurrentState { get; private set; }

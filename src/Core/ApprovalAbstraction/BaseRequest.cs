@@ -19,7 +19,7 @@ namespace Core.ApprovalAbstraction
 
             stateMachine = new StateMachine<RequestState, Triggers>(() => CurrentState, state => CurrentState = state);
 
-            stateMachine.OnUnhandledTrigger(stateExceptionHandler);
+            stateMachine.OnUnhandledTrigger(StateExceptionHandler);
 
             approveTrigger = stateMachine.SetTriggerParameters<Decision>(Triggers.Approve);
             rejectTrigger = stateMachine.SetTriggerParameters<Decision>(Triggers.Reject);
@@ -65,7 +65,7 @@ namespace Core.ApprovalAbstraction
             Helpers.OnApproveNotification(Requester.Name, Requester.WorkPlace);
         }
 
-        protected void stateExceptionHandler(RequestState state, Triggers trigger, ICollection<string> args)
+        protected virtual void StateExceptionHandler(RequestState state, Triggers trigger, ICollection<string> args)
         {
             Helpers.HandleException(state, trigger, args);
         }
