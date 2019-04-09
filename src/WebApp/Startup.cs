@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
@@ -14,7 +15,7 @@ namespace WebApp
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddAuthentication("Bearer")
+            services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 .AddIdentityServerAuthentication(options =>
                 {
                     options.Authority = "http://dev.sb.com/Authentication/";
@@ -24,16 +25,18 @@ namespace WebApp
 
             services.AddAuthorization(options =>
             {
+                options.InvokeHandlersAfterFailure = false;
                 options.AddPolicy("accessControlPolicy", policy =>
                 {
                     policy.AddAuthenticationSchemes("Bearer");
-                    policy.RequireAuthenticatedUser();                    
+                    policy.RequireAuthenticatedUser();
+                    //policy.RequireAssertion(cxt => cxt.User?.Identity != null);
                     policy.AddRequirements(new AccessControlRequirement(false));
                 });
             });
 
-            services.AddTransient<IAuthorizationHandler, AccessControlRequirementFirstHandler>();
             services.AddTransient<IAuthorizationHandler, AccessControlRequirementSecondHandler>();
+            services.AddTransient<IAuthorizationHandler, AccessControlRequirementFirstHandler>();
 
             var mvc = services.AddMvc(o =>
             {
