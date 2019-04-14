@@ -7,9 +7,9 @@ namespace WebApp
     {
         protected override Task HandleRequirementAsync(AuthorizationHandlerContext context, AccessControlRequirement requirement)
         {
-            //if (context.User.FindFirst("employeeId") != null)
-            context.Fail();
-            //context.Succeed(requirement);
+            var x =  context.User.FindFirst("employeeId").Value;
+            //context.Fail();
+            context.Succeed(requirement);
             return Task.CompletedTask;
         }
     }
